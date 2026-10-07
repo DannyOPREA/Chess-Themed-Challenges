@@ -187,3 +187,17 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 - The variable listing also covers `WRANGLER_*`, `WORKERS_*` and the proxy variables. Why: `WRANGLER_API_ENVIRONMENT` and `HTTPS_PROXY` change where Wrangler sends its calls, which is the other theory left; names only, as before.
 - Step 6 says the deploy step's first lines name the token used. The plan's Work 1 and 5 and its Tests now describe all of the above.
 - Not done: `wrangler whoami` in the script. Why: the migrations call already shows whether the token works, and the new length and character check covers "is this a real token" without printing account details.
+
+## 2026-10-07: Second unit review of the build-token change
+
+**Done**
+- Ran the `unit-reviewer` agent again on PR #19 at 30228a4. Verdict: pass, no Blocking or Should fix findings; it confirmed all four fixes from the first pass.
+
+**Worked**
+- It ran the token part of the script with 14 inputs under dash and bash, in both the C and UTF-8 locales, and the token's value never appeared in the output. A `cfat_…` style token passes without a warning.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Left as they are, from its notes: under dash the length counts bytes, so a non-breaking space shows as two extra characters (the warning still fires), and the deny list doesn't cover forms such as `dash scripts/deploy.sh`. Why: neither changes what the build does, and the plan already says rule 7 is the real guard.
