@@ -15,6 +15,10 @@ npm run typecheck
 
 The spec is [`docs/scope.md`](docs/scope.md) and the build plan is [`docs/phases.md`](docs/phases.md).
 
+## Host page
+
+The host page is at `/host`. The browser asks for a user name and password: any user name works, and the password is the `HOST_PASSWORD` secret (`local-host-password` when running locally). From there the host moves the game through its phases, fixes completions, resets PINs, removes players and shows the join QR code.
+
 ## Deploying
 
 Every push to `main` deploys the app through Cloudflare Workers Builds; nothing is deployed by hand. Workers Builds installs the packages and runs `npm run deploy`, which applies any new D1 migrations to the production database and then runs `wrangler deploy`. Wrangler runs `scripts/copy-vendor.mjs` before deploying, and finds the production database by its name, `chess-crawl`. CI's `check` job also builds the Worker without uploading it (`wrangler deploy --dry-run`), so a change that can't deploy fails before it reaches `main`.
