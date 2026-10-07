@@ -1,7 +1,7 @@
 # Phase-by-phase plan
 
 - Written: 2026-10-07
-- Approved by Danny: not yet
+- Approved by Danny: 2026-10-07
 - Changes to this plan are logged in [`logs/general.md`](../logs/general.md).
 
 This plan splits the build of [`scope.md`](scope.md) into 4 phases and 11 units. One unit is one PR. Each unit's detailed build plan is written in its own PR, at the path shown, from the template in [`README.md`](README.md); this file only fixes what each unit delivers, what it depends on, and the order.

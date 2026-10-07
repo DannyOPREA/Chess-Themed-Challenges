@@ -99,7 +99,7 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 - Wrote `docs/phases.md`: 4 phases and 11 units, each with what it delivers and what it depends on, the order in waves of parallel units, and the key dates.
 
 **Worked**
-- Nothing to note yet.
+- Danny approved the plan on 2026-10-07, after one change (no target times).
 
 **Didn't work**
 - Nothing.
