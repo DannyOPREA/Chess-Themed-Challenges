@@ -36,6 +36,7 @@ The project scaffold must provide these npm scripts. Keep the names: the session
 5. **Keep the real content out of anything testers might see**: test fixtures, screenshots, PR descriptions and commit messages use the `test` set. The repo is public by Danny's choice, and committing the real content file is fine.
 6. Anything under "Not in scope" in `docs/scope.md` needs Danny's OK first.
 7. **Never deploy from a session.** Don't run `wrangler deploy`, `wrangler secret put` or any `--remote` command. Production changes only through Workers Builds when `main` changes.
+   The Cloudflare connector, when a session has it, is for looking only: listing resources and read-only (`SELECT`) D1 queries. Don't create, change or delete anything through it unless Danny asks for that specific change in the thread.
 8. Before calling work done, `npm run typecheck` and `npm test` must pass.
 
 ## Claude Code setup in this repo
