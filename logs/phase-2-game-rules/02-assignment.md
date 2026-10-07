@@ -57,3 +57,19 @@ Plan: [docs/phase-2-game-rules/02-assignment.md](../../docs/phase-2-game-rules/0
 - `unit-reviewer`: the removed-player test repeated the 19-held one. Replaced it with the case beyond 20: 21 players, remove one who alone holds a number, and the next joiner gets it.
 - `unit-reviewer`: numbers shared beyond 20 stay shared if players are later removed. Recorded in the plan, no code change. Why: assignments never change (`scope.md`).
 - `unit-reviewer`: the race must actually be handled in 3.01 and 3.04. Recorded in the plan's "Not in this unit" with the suggested pattern.
+
+## 2026-10-07: Second unit review
+
+**Done**
+- Ran `unit-reviewer` again on the fixes. Verdict: Fix needed, with two Should fix findings and no Blocking. Fixed both, as below.
+
+**Worked**
+- The bad-value handling and the plan and log updates passed.
+
+**Didn't work**
+- `isEvenlyAssigned`, added after the first reviews, checked the whole table. The reviewer showed that after 21 players and two removals the table is uneven for good (assignments never change), so no joiner's pick could pass and 3.01's suggested re-pick loop would never end. Replaced it with `isLeastHeld(others, player)`, which checks only the joiner's numbers against everyone else. A fresh pick always passes it, and it still catches two joiners on the same free number, because each sees the other holding it.
+
+**Decisions**
+- Should fix: replace the whole-table check with the per-joiner `isLeastHeld`, with a test for the 21-minus-2 case. Why: the check must always be satisfiable by a fresh pick, or the caller loops.
+- Should fix: the suggested pattern for 3.01 now says to leave the joiner out of the list when re-picking and to cap the retries. Why: otherwise the joiner's own clashing numbers count as taken, and two racing joiners could collide again.
+- Notes taken into the plan: 3.04's guarded update checks `decoy` too, and changes the phase in the same batch; 3.01 assigns any player it finds with `null` numbers during Game on, covering someone who joins between 3.04's read and its write. Why: both are cheap for those units to do and easy to miss.

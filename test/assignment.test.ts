@@ -5,7 +5,7 @@ import {
   type RandomSource,
   assignOne,
   assignPlayers,
-  isEvenlyAssigned,
+  isLeastHeld,
 } from '../src/game/assignment'
 
 // A small seeded random source (mulberry32), so failures can be reproduced.
@@ -269,35 +269,59 @@ describe('bad stored values', () => {
       const players: AssignmentSlot[] = [{ challenge: bad, decoy: 1 }, { challenge: null, decoy: null }]
       expect(() => assignPlayers(players)).toThrow(RangeError)
       expect(() => assignOne(players)).toThrow(RangeError)
-      expect(() => isEvenlyAssigned(players)).toThrow(RangeError)
+      expect(() => isLeastHeld(players, { challenge: 2, decoy: 2 })).toThrow(RangeError)
+      expect(() => isLeastHeld([], { challenge: bad, decoy: 2 })).toThrow(RangeError)
     }
   })
 })
 
-describe('re-checking after a write', () => {
-  it('passes everything the assignment functions produce', () => {
-    for (const size of [0, 1, 7, 20, 21, 33, 40]) {
-      const random = seeded(size)
-      const players: AssignmentSlot[] = assignPlayers(lobby(size), { random })
-      expect(isEvenlyAssigned(players)).toBe(true)
-      players.push(assignOne(players, { random }))
-      expect(isEvenlyAssigned(players)).toBe(true)
+describe('re-checking a late joiner after a write', () => {
+  it('passes every fresh pick', () => {
+    for (const size of [0, 1, 7, 19, 20, 21, 33, 40]) {
+      for (const seed of SEEDS) {
+        const random = seeded(seed * 100 + size)
+        const players: AssignmentSlot[] = assignPlayers(lobby(size), { random })
+        expect(isLeastHeld(players, assignOne(players, { random }))).toBe(true)
+      }
     }
   })
 
-  it('catches two players sharing a challenge or a decoy while others are free', () => {
-    expect(isEvenlyAssigned([{ challenge: 7, decoy: 1 }, { challenge: 7, decoy: 2 }])).toBe(false)
-    expect(isEvenlyAssigned([{ challenge: 1, decoy: 7 }, { challenge: 2, decoy: 7 }])).toBe(false)
+  it('catches another joiner who took the same free challenge or decoy', () => {
+    const players: AssignmentSlot[] = assignPlayers(lobby(10), { random: seeded(1) })
+    const mine = assignOne(players, { random: seeded(2) })
+    // Another phone joined at the same moment and wrote the same numbers.
+    const rival = { ...mine }
+    expect(isLeastHeld([...players, rival], mine)).toBe(false)
+    expect(isLeastHeld([...players, { ...rival, decoy: null }], mine)).toBe(false)
+    expect(isLeastHeld([...players, { ...rival, challenge: null }], mine)).toBe(false)
+    // Picking again with everyone else in view gives numbers that pass.
+    const again = assignOne([...players, rival], { random: seeded(3) })
+    expect(isLeastHeld([...players, rival], again)).toBe(true)
   })
 
-  it('catches uneven reuse beyond 20 players', () => {
-    const players: AssignmentSlot[] = assignPlayers(lobby(20), { random: seeded(9) })
-    // A 21st and 22nd player both on challenge 1 leaves it held three times.
-    players.push({ challenge: 1, decoy: 1 }, { challenge: 1, decoy: 2 })
-    expect(isEvenlyAssigned(players)).toBe(false)
+  it('allows sharing beyond 20 players, when every number is already held', () => {
+    const players: AssignmentSlot[] = assignPlayers(lobby(20), { random: seeded(4) })
+    expect(isLeastHeld(players, { challenge: 5, decoy: 9 })).toBe(true)
+    players.push({ challenge: 5, decoy: 9 })
+    expect(isLeastHeld(players, { challenge: 5, decoy: 1 })).toBe(false)
+  })
+
+  it('can always be met after removals leave reuse uneven', () => {
+    for (const seed of SEEDS) {
+      // 21 players, then two who alone hold a challenge are removed: 19
+      // players hold 18 challenges, one of them twice. The table stays
+      // uneven, as assignments never change, but a joiner's pick still passes.
+      const players = assignPlayers(lobby(21), { random: seeded(seed) })
+      const held = counts(players.map((p) => p.challenge))
+      const removed = players.filter((p) => held[p.challenge - 1] === 1).slice(0, 2)
+      const remaining = players.filter((p) => !removed.includes(p))
+      const joiner = assignOne(remaining, { random: seeded(seed + 1) })
+      expect(removed.map((p) => p.challenge)).toContain(joiner.challenge)
+      expect(isLeastHeld(remaining, joiner)).toBe(true)
+    }
   })
 
   it('ignores players not yet assigned', () => {
-    expect(isEvenlyAssigned([{ challenge: 3, decoy: 4 }, { challenge: null, decoy: null }])).toBe(true)
+    expect(isLeastHeld([{ challenge: 3, decoy: 4 }, { challenge: null, decoy: null }], { challenge: 1, decoy: 1 })).toBe(true)
   })
 })

@@ -101,16 +101,21 @@ export function assignOne(
 }
 
 /**
- * Whether the players' numbers follow the rule above: no challenge, and no
- * decoy, is held by more than one player more than any other. With 20 or
- * fewer players that means no two share a challenge or a decoy. Callers use
- * it to re-check after writing, because two phones joining at the same moment
- * can both pick from the same free numbers; a late joiner whose new numbers
- * fail the check hasn't been shown them yet and can safely pick again.
+ * Whether a player's numbers are still among the least held by everyone else
+ * (`others` must leave that player out). It always holds for a fresh
+ * `assignOne` pick, and fails when someone else took the same free number in
+ * the meantime: two phones joining at the same moment can both pick from the
+ * same free numbers. Callers re-check a late joiner with it after writing; a
+ * joiner who fails hasn't been shown their numbers yet and can pick again.
  */
-export function isEvenlyAssigned(players: readonly AssignmentSlot[]): boolean {
-  return [players.map((p) => p.challenge), players.map((p) => p.decoy)].every((held) => {
+export function isLeastHeld(others: readonly AssignmentSlot[], player: Assignment): boolean {
+  const ok = (held: readonly (number | null)[], n: number) => {
+    countHeld([n]) // throws if n itself is out of range
     const counts = countHeld(held)
-    return Math.max(...counts) - Math.min(...counts) <= 1
-  })
+    return counts[n - 1] === Math.min(...counts)
+  }
+  return (
+    ok(others.map((p) => p.challenge), player.challenge) &&
+    ok(others.map((p) => p.decoy), player.decoy)
+  )
 }
