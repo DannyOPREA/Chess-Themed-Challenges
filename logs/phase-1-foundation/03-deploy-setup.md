@@ -112,3 +112,19 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 - README now matches the plan on what happens without the secret. Why: the code review found them disagreeing.
 - Kept the "Edit Cloudflare Workers" template with All zones, rather than asking Danny for a narrower custom token. Why: the account has no zones (the app uses workers.dev only), so the zone permissions grant nothing in practice, and Danny already made this token; the code review's point about scope is noted here for the final review.
 - Not made Windows-safe (the code review noted `cmd.exe` doesn't understand the script). Why: only Workers Builds, on Linux, runs it; sessions never deploy and nobody deploys by hand (`CLAUDE.md` rule 7).
+
+## 2026-10-07: Unit review of the deploy token change
+
+**Done**
+- Ran the `unit-reviewer` agent on PR #18 (head afe8525): Pass, nothing Blocking or Should fix. CI's `check` job was green on that commit.
+
+**Worked**
+- It ran the exact script from `package.json` under `sh` with a fake `wrangler`: unset or empty secret stops with the message and exit 1; a set secret reaches both commands and replaces Workers Builds' own token; a failed migration stops the deploy. It confirmed in Wrangler 4.148's code that `CLOUDFLARE_API_TOKEN` beats a stored login and that the account and CI checks don't depend on which token is used.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Its notes taken: README step 5 now names the setting as Cloudflare's docs do (**Build variables and secrets**), and step 6 says a retried build picks up the secret, since the docs say a retry uses the settings as they are when it is retried. Why: both make the steps match the dashboard and docs.
+- Its notes left: a secret that is only spaces passes the check, and `CLOUDFLARE_API_KEY` plus `CLOUDFLARE_EMAIL` would beat the token if both were set. Why: Danny pastes the value with the dashboard's copy button, and Workers Builds sets neither of the others.
+- The name `DEPLOY_API_TOKEN` and the build-secret approach were Claude's choices, not Danny's. Why recorded: logs say who decided (`logs/README.md` rule 6).
