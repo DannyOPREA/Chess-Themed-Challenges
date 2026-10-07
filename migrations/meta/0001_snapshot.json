@@ -1,0 +1,235 @@
+{
+  "id": "047bc37c-bcdb-419a-b6f2-9e60ed82bbad",
+  "prevId": "f9bf69a9-eed3-4ff3-bbef-5f012e420f3f",
+  "version": "6",
+  "dialect": "sqlite",
+  "tables": {
+    "accusations": {
+      "name": "accusations",
+      "columns": {
+        "accuser_id": {
+          "name": "accuser_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "accused_id": {
+          "name": "accused_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "challenge": {
+          "name": "challenge",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "accusations_accused_idx": {
+          "name": "accusations_accused_idx",
+          "columns": [
+            "accused_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "accusations_accuser_id_players_id_fk": {
+          "name": "accusations_accuser_id_players_id_fk",
+          "tableFrom": "accusations",
+          "columnsFrom": [
+            "accuser_id"
+          ],
+          "tableTo": "players",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "accusations_accused_id_players_id_fk": {
+          "name": "accusations_accused_id_players_id_fk",
+          "tableFrom": "accusations",
+          "columnsFrom": [
+            "accused_id"
+          ],
+          "tableTo": "players",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "accusations_accuser_id_accused_id_pk": {
+          "columns": [
+            "accuser_id",
+            "accused_id"
+          ],
+          "name": "accusations_accuser_id_accused_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "accusations_not_self": {
+          "name": "accusations_not_self",
+          "value": "accuser_id <> accused_id"
+        },
+        "accusations_challenge_valid": {
+          "name": "accusations_challenge_valid",
+          "value": "challenge is null or (typeof(challenge) = 'integer' and challenge between 1 and 20)"
+        }
+      }
+    },
+    "game": {
+      "name": "game",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "phase": {
+          "name": "phase",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'lobby'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "game_single_row": {
+          "name": "game_single_row",
+          "value": "id = 1"
+        },
+        "game_phase_valid": {
+          "name": "game_phase_valid",
+          "value": "phase in ('lobby', 'game_on', 'accusations_closed', 'reveal')"
+        }
+      }
+    },
+    "players": {
+      "name": "players",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name_key": {
+          "name": "name_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pin_hash": {
+          "name": "pin_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pin_salt": {
+          "name": "pin_salt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "challenge": {
+          "name": "challenge",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "decoy": {
+          "name": "decoy",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "completed": {
+          "name": "completed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "players_name_key_unique": {
+          "name": "players_name_key_unique",
+          "columns": [
+            "name_key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "players_challenge_valid": {
+          "name": "players_challenge_valid",
+          "value": "challenge is null or (typeof(challenge) = 'integer' and challenge between 1 and 20)"
+        },
+        "players_decoy_valid": {
+          "name": "players_decoy_valid",
+          "value": "decoy is null or (typeof(decoy) = 'integer' and decoy between 1 and 20)"
+        },
+        "players_assigned_together": {
+          "name": "players_assigned_together",
+          "value": "(challenge is null) = (decoy is null)"
+        },
+        "players_completed_when_assigned": {
+          "name": "players_completed_when_assigned",
+          "value": "completed = 0 or challenge is not null"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

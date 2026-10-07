@@ -89,3 +89,17 @@ Plan: [docs/phase-2-game-rules/02-assignment.md](../../docs/phase-2-game-rules/0
 - Note: two joiners re-picking in lockstep can collide every round (the reviewer reproduced it with adversarial timing). Added to the suggested pattern for 3.01: a short random wait before each re-pick, and when the cap is reached, keep the numbers, log a warning and let the join succeed. Why: it needs phones joining within milliseconds during Game on, and a rare shared challenge is better than a player locked out.
 - Note: 3.04's suggested guard is now `challenge IS NULL OR decoy IS NULL`. Why: it matches `assignPlayers`, which fills in either half.
 - Notes: the plan's wording for when `isLeastHeld` fails, and the missing "ignores players not yet assigned" test in the plan's list, fixed. Why: keep the plan matching the code.
+
+## 2026-10-07: Content size shared with unit 1.02
+
+**Done**
+- `CONTENT_SIZE` in `src/game/assignment.ts` is now re-exported from `src/content/size.ts`, in the unit 1.02 PR, instead of being declared a second time.
+
+**Worked**
+- Typecheck and all tests pass; callers still import it from `assignment.ts`.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- One source for the number of challenges. Why: units 1.02 and 2.02 were built in parallel and each declared it; the content files and the database checks use the 1.02 one, so a change to the content size can't leave assignment drawing from a different range.

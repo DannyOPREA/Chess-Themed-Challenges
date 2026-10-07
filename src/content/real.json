@@ -1,0 +1,186 @@
+{
+  "challenges": [
+    {
+      "name": "The Opening",
+      "description": "Get three different people to say the name of a chess opening (e.g. \"Sicilian,\" \"London,\" \"Caro-Kann\") without saying one yourself first.",
+      "hint": "Someone is very curious about how other people like to start things."
+    },
+    {
+      "name": "Castling",
+      "description": "Swap seats with someone at two different pubs without either of them noticing it was deliberate.",
+      "hint": "Somebody's memory for where they were sitting seems suspiciously poor."
+    },
+    {
+      "name": "En Passant",
+      "description": "Take something (a crisp, a drink, a chess piece) from someone's side of the table just after they've put it down, 3 times without any of them commenting on it.",
+      "hint": "Keep an eye on whatever you've just put down."
+    },
+    {
+      "name": "Promotion",
+      "description": "Convince someone to give you a \"title\" for the night, like a nickname that sticks for at least one full pub.",
+      "hint": "Someone is angling for a promotion tonight."
+    },
+    {
+      "name": "The Fork",
+      "description": "Get two different people to ask you the same question within five minutes.",
+      "hint": "Someone wants to hear the same words from two directions."
+    },
+    {
+      "name": "Zugzwang",
+      "description": "Get two different people to say \"I don't know what to do\" or \"I'm stuck.\"",
+      "hint": "Someone wants to leave people with no good options."
+    },
+    {
+      "name": "Checkmate",
+      "description": "Use the words \"check\" or \"mate\" naturally in conversation five times each (e.g. \"let me check,\" \"cheers, mate\").",
+      "hint": "Listen for someone with two small words they can't stop using."
+    },
+    {
+      "name": "The Knight's Move",
+      "description": "Every time you move to a new spot in a pub, go somewhere L-shaped from where you were.",
+      "hint": "Watch how people get from one spot to the next."
+    },
+    {
+      "name": "Blunder",
+      "description": "Deliberately get three different well-known chess facts slightly wrong without anyone correcting you.",
+      "hint": "Someone's chess knowledge seems a little shakier than it should be."
+    },
+    {
+      "name": "Stalemate",
+      "description": "Get into a friendly debate with 2 different people (not at the same time) that ends with you both agreeing to disagree.",
+      "hint": "Someone is happy to argue but never seems to want to win."
+    },
+    {
+      "name": "Gambit",
+      "description": "Give something away early in the night (a crisp, your seat, a coaster) and get something better back from the same person before the crawl ends.",
+      "hint": "Someone's generosity may come with a catch later in the night."
+    },
+    {
+      "name": "Touch-Move",
+      "description": "Any item of someone else's that you touch on the table, you must move to a new spot before letting go. Do this at least three times in the night.",
+      "hint": "Someone can't seem to leave things exactly where they found them."
+    },
+    {
+      "name": "Resignation",
+      "description": "Get two different people to say \"I give up,\" \"fine, you win,\" or \"I resign.\"",
+      "hint": "Someone is very keen to see others concede."
+    },
+    {
+      "name": "The Pin",
+      "description": "At one pub, sit so that a particular person can't leave their seat without asking you to move, and get them to ask at least once.",
+      "hint": "At one stop, someone will sit awkwardly for their neighbour."
+    },
+    {
+      "name": "Threefold Repetition",
+      "description": "Say the exact same sentence to the same person three different times without them commenting on it.",
+      "hint": "Listen for something that sounds familiar..."
+    },
+    {
+      "name": "The Queen",
+      "description": "Get two different people to say \"Oh no, my Queen!\".",
+      "hint": "Someone has their eye on royalty."
+    },
+    {
+      "name": "Skewer",
+      "description": "Get two people to line up directly behind you, for example in a queue at the bar or walking single file between pubs. Do it three different times.",
+      "hint": "Someone likes having company at their back."
+    },
+    {
+      "name": "Zwischenzug",
+      "description": "Interrupt someone's story with a completely unrelated question, then let them carry on as if nothing happened. Do it three times.",
+      "hint": "Someone's questions are... questionable."
+    },
+    {
+      "name": "I Adjust",
+      "description": "Straighten or adjust one person's belongings (a glass, a phone, a coat) five times in the night without them commenting on it.",
+      "hint": "One person's belongings are getting a lot of unasked-for attention."
+    },
+    {
+      "name": "Perpetual Check",
+      "description": "Ask the same person \"you alright?\" or \"you okay?\" every time they come back to the table, all night.",
+      "hint": "One person is receiving an unusual amount of concern."
+    }
+  ],
+  "decoys": [
+    {
+      "name": "The Watcher",
+      "description": "Keep glancing at one particular person, as if you're tracking them for your challenge."
+    },
+    {
+      "name": "The Counter",
+      "description": "Occasionally count something under your breath or on your fingers, then look satisfied."
+    },
+    {
+      "name": "The Interviewer",
+      "description": "Ask people oddly specific questions, like their favourite vegetable or what their first phone was."
+    },
+    {
+      "name": "The Note-Taker",
+      "description": "After certain conversations, type something into your phone notes slightly too visibly."
+    },
+    {
+      "name": "The Table Tapper",
+      "description": "Tap the table once whenever you finish saying something. Looks a lot like hitting a chess clock."
+    },
+    {
+      "name": "The Word Lover",
+      "description": "Pick an ordinary word like \"interesting\" or \"fair enough\" and use it noticeably often."
+    },
+    {
+      "name": "The Time Checker",
+      "description": "Ask someone what time it is at every pub."
+    },
+    {
+      "name": "The Silent Celebrator",
+      "description": "Do a tiny fist pump or smug smile after someone says something completely mundane."
+    },
+    {
+      "name": "The Toaster",
+      "description": "Propose a toast at every pub, each one to something a bit more random than the last."
+    },
+    {
+      "name": "The Pointer",
+      "description": "Point at things when you talk about them, even when there's no need to."
+    },
+    {
+      "name": "The Name Dropper",
+      "description": "Mention the same famous chess player in conversation a few times."
+    },
+    {
+      "name": "The Handshaker",
+      "description": "Shake hands with people when you arrive at each pub, as though it's important."
+    },
+    {
+      "name": "The Hummer",
+      "description": "Hum the same short tune quietly a few times through the night."
+    },
+    {
+      "name": "The Agreer",
+      "description": "Say \"exactly\" a bit too enthusiastically whenever someone makes a point."
+    },
+    {
+      "name": "The Hoverer",
+      "description": "Hover your hand over something before picking up something else, all night."
+    },
+    {
+      "name": "The Long Thinker",
+      "description": "Take an exaggerated pause before answering simple questions."
+    },
+    {
+      "name": "The Closer",
+      "description": "Shake hands at the end of conversations rather than the start."
+    },
+    {
+      "name": "The Corner Cutter",
+      "description": "Cross rooms diagonally whenever you can."
+    },
+    {
+      "name": "The Swapper",
+      "description": "Quietly swap the positions of two items on the table."
+    },
+    {
+      "name": "The Planner",
+      "description": "Keep asking people what they're doing next, after the crawl or this weekend."
+    }
+  ]
+}
