@@ -5,6 +5,7 @@ import type { AppEnv } from './env'
 import { layout } from './layout'
 import { notFound, onError } from './routes/errors'
 import { home } from './routes/home'
+import { host } from './routes/host'
 import { play } from './routes/play'
 
 const app = new Hono<AppEnv>()
@@ -23,6 +24,7 @@ app.use(layout)
 // Each screen's routes live in their own file under src/routes/ and are
 // registered here with one line.
 app.route('/', home)
+app.route('/', host)
 app.route('/', play)
 
 app.notFound(notFound)

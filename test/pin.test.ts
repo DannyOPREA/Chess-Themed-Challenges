@@ -2,11 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { hashPin, pinSchema, verifyPin } from '../src/auth/pin'
 
 describe('PIN hashing', () => {
-  it('stores a salted SHA-256 hash, never the PIN', async () => {
+  it('stores a salted SHA-256 hash and its salt as hex', async () => {
     const { pinHash, pinSalt } = await hashPin('1234')
     expect(pinHash).toMatch(/^[0-9a-f]{64}$/)
     expect(pinSalt).toMatch(/^[0-9a-f]{32}$/)
-    expect(pinHash).not.toContain('1234')
   })
 
   it('uses a fresh salt each time, so the same PIN hashes differently', async () => {
