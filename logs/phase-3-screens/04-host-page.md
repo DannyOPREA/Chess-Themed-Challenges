@@ -115,3 +115,17 @@ Plan: [docs/phase-3-screens/04-host-page.md](../../docs/phase-3-screens/04-host-
 
 **Decisions**
 - None. Carried over for 3.01: anyone left without numbers by the join race is assigned by 3.01, and whichever of 3.01 and this unit merges second keeps `main`'s `src/auth/pin.ts` body (the exports match).
+
+## 2026-10-07: Shared phase guard (from unit 3.02)
+
+**Done**
+- Unit 3.02 moved the "phase at the moment of the write" subquery into `src/db/game.ts` as `currentPhase` and `currentPhaseAllows(action)`, and this unit's `src/db/` file now imports it instead of keeping its own copy. The SQL each write runs is the same; this unit's tests pass unchanged.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- One shared copy. Why: `/code-review` on 3.02 found three private copies of the same guard; one place to change if the game row changes.

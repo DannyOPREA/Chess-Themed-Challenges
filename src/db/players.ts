@@ -1,22 +1,11 @@
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { assignOne, type AssignOptions } from '../game/assignment'
 import { nameKey } from '../game/names'
-import { type Phase, PHASES, phaseAllows } from '../game/phases'
 import type { Db } from './client'
-import { getPhase } from './game'
+import { currentPhase, currentPhaseAllows, getPhase } from './game'
 import { game, type Player, players } from './schema'
 
 // Reading and writing players for joining and rejoining (unit 3.01).
-
-// The game's phase at the moment a statement runs, so a write can be guarded
-// on it rather than on a phase read a moment earlier.
-const currentPhase = sql`(select ${game.phase} from ${game} where ${game.id} = 1)`
-
-const phaseList = (phases: readonly Phase[]) =>
-  sql.join(
-    phases.map((p) => sql`${p}`),
-    sql`, `,
-  )
 
 export const findPlayerByName = (db: Db, name: string): Promise<Player | undefined> =>
   db.select().from(players).where(eq(players.nameKey, nameKey(name))).get()
@@ -32,12 +21,11 @@ export const createPlayer = async (
   name: string,
   pin: { pinHash: string; pinSalt: string },
 ): Promise<Player | undefined> => {
-  const joinPhases = phaseList(PHASES.filter((p) => phaseAllows(p, 'join')))
   // SQLite needs the WHERE for an INSERT ... SELECT to take an ON CONFLICT.
   const inserted = await db.all<{ id: number }>(sql`
     insert into ${players} (name, name_key, pin_hash, pin_salt)
     select ${name}, ${nameKey(name)}, ${pin.pinHash}, ${pin.pinSalt}
-    where ${currentPhase} in (${joinPhases})
+    where ${currentPhaseAllows('join')}
     on conflict (name_key) do nothing
     returning id`)
   const id = inserted[0]?.id

@@ -104,7 +104,7 @@ describe('joining', () => {
     const cookie = cookieFrom(res)
     const play = await get('/play', cookie)
     expect(play.status).toBe(200)
-    expect(await play.text()).toContain('You&#39;re in, Sam')
+    expect(await play.text()).toContain('<h1>Sam</h1>')
   })
 
   it('sends a phone that is already in straight to the player screen', async () => {
@@ -119,7 +119,7 @@ describe('joining', () => {
     const [player] = await allPlayers()
     expect(player?.name).toBe('Sam Smith')
     expect(player?.nameKey).toBe('sam smith')
-    expect(await (await get('/play', cookie)).text()).toContain('You&#39;re in, Sam Smith')
+    expect(await (await get('/play', cookie)).text()).toContain('<h1>Sam Smith</h1>')
   })
 
   it('refuses a name already taken in different capitals or spacing, unless the PIN matches', async () => {
@@ -142,7 +142,7 @@ describe('joining', () => {
 
     const cookie = await joinedCookie('Sam', '1234')
     expect(await allPlayers()).toHaveLength(1)
-    expect(await (await get('/play', cookie)).text()).toContain('You&#39;re in, Sam')
+    expect(await (await get('/play', cookie)).text()).toContain('<h1>Sam</h1>')
     expect((await allPlayers())[0]?.id).toBe(sam.id)
   })
 
@@ -284,7 +284,7 @@ describe('late joiners during Game on', () => {
     expect(sam?.challenge).not.toBeNull()
     expect(sam?.challenge).not.toBe(1)
     expect(sam?.decoy).not.toBe(1)
-    expect(html).toContain(`Your challenge: <strong>Challenge ${sam?.challenge}</strong>`)
+    expect(html).toContain(`<h3>Challenge ${sam?.challenge}</h3>`)
   })
 
   it('reuse challenges beyond 20 players instead of being refused', async () => {
@@ -312,9 +312,9 @@ describe('rejoining', () => {
       { accuserId: sam.id, accusedId: alex.id, challenge: 9 },
     ])
     const html = await (await get('/play', cookie)).text()
-    expect(html).toContain('You&#39;re in, Sam')
-    expect(html).toContain('Your challenge: <strong>Challenge 3</strong>')
-    expect(html).toContain('Your decoy: <strong>Decoy 4</strong>')
+    expect(html).toContain('<h1>Sam</h1>')
+    expect(html).toContain('<h3>Challenge 3</h3>')
+    expect(html).toContain('<h3>Decoy 4</h3>')
   })
 
   it('works in every phase', async () => {
@@ -332,9 +332,11 @@ describe('the player cookie', () => {
     await addPlayer('Alex', '0000', { challenge: 2, decoy: 5 })
     await addPlayer('Sam', '1234', { challenge: 3, decoy: 4 })
     const html = await (await get('/play', await joinedCookie('Sam', '1234'))).text()
-    expect(html).toMatch(/Challenge 3\b/)
+    expect(html).toMatch(/Description of Challenge 3\b/)
     expect(html).toMatch(/Decoy 4\b/)
-    expect(html).not.toMatch(/Challenge 2\b/)
+    // Every challenge name is in the hint list (unit 3.02), but only the
+    // player's own challenge has its description.
+    expect(html).not.toMatch(/Description of Challenge 2\b/)
     expect(html).not.toMatch(/Decoy 5\b/)
     expect(html).not.toContain('Alex')
   })
