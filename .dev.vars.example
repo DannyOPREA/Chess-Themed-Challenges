@@ -1,0 +1,4 @@
+# Local values for the Worker's secrets. Copy this file to .dev.vars (git-ignored)
+# before `npm run dev`. Production values are set in the Cloudflare dashboard.
+HOST_PASSWORD=local-host-password
+COOKIE_SECRET=local-cookie-secret-change-me

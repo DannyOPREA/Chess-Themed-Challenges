@@ -17,6 +17,12 @@
     // Switching to "real" is its own PR that also clears the game (CLAUDE.md rule 4).
     "CONTENT_SET": "test"
   },
+  // Secrets are set in the Cloudflare dashboard (unit 1.03), locally in a
+  // git-ignored .dev.vars (copy .dev.vars.example), and in tests by
+  // vitest.config.ts. Listing them here types them in worker-configuration.d.ts.
+  "secrets": {
+    "required": ["HOST_PASSWORD", "COOKIE_SECRET"]
+  },
   "d1_databases": [
     {
       "binding": "DB",

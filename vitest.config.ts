@@ -10,6 +10,9 @@ export default defineConfig(async () => {
     plugins: [
       cloudflareTest({
         wrangler: { configPath: './wrangler.jsonc' },
+        miniflare: {
+          bindings: { HOST_PASSWORD: 'test-host-password', COOKIE_SECRET: 'test-cookie-secret' },
+        },
       }),
     ],
     test: {

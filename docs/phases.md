@@ -50,7 +50,7 @@ Folder: `docs/phase-1-foundation/`
 ### 1.03 Deploy setup (`03-deploy-setup.md`)
 
 - Depends on: 1.01
-- Delivers: everything needed for Cloudflare Workers Builds to build, apply D1 migrations and deploy on every push to `main`, and a short checklist for Danny of the steps only Danny can do in the Cloudflare dashboard: linking the repo to Workers Builds, the production D1 database, and the two secrets (the host password and the cookie signing key). Local values go in a git-ignored `.dev.vars`, with an example file committed.
+- Delivers: everything needed for Cloudflare Workers Builds to build, apply D1 migrations and deploy on every push to `main`, and a short checklist for Danny of the steps only Danny can do in the Cloudflare dashboard: linking the repo to Workers Builds, the production D1 database, and the two secrets (the host password and the cookie signing key). Local values go in a git-ignored `.dev.vars`; the secret names and the example file come with 1.01.
 - Runs early so the live app exists well before Thursday, and every later merge deploys. Sessions never deploy (`CLAUDE.md` rule 7); this unit only prepares the config and the checklist.
 
 ## Phase 2: Game rules

@@ -6,6 +6,7 @@ A mobile web app for a chess-themed pub crawl: each player gets a secret challen
 
 ```sh
 npm ci
+cp .dev.vars.example .dev.vars
 npm run db:migrate:local
 npm run dev        # http://localhost:8787
 npm test

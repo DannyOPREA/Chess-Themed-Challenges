@@ -128,3 +128,17 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 
 **Decisions**
 - Use `@cloudflare/vitest-plugin`. Why: it is Cloudflare's new name for `@cloudflare/vitest-pool-workers`, which is deprecated and gets no more updates. The same package, so not a stack swap.
+
+## 2026-10-07: Secrets declared in the scaffold
+
+**Done**
+- `docs/phases.md` (unit 1.03) now says the secret names and `.dev.vars.example` come with unit 1.01, in the scaffold PR.
+
+**Worked**
+- Nothing to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Declare both secrets in the scaffold. Why: units 1.03, 3.01 and 3.04 would otherwise each add them and conflict on the same lines (found by the unit reviewer).

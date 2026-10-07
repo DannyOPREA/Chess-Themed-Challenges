@@ -67,3 +67,27 @@ Plan: [docs/phase-1-foundation/01-scaffold.md](../../docs/phase-1-foundation/01-
 **Decisions**
 - Keep the vendor copy script. Why: it is eight lines of build glue, not a solved problem a library covers; the alternatives are a CDN (a second site the pages depend on during the night) or Wrangler text-module rules for `.js` files (fragile with the bundler and the test runner). `copyFileSync` throws on a missing file, so a moved file fails the build loudly instead of shipping pages without CSS.
 - No automated test that `/vendor/*` is served. Why: tests call the Worker directly and Workers static assets sit in front of it, so a test can't see them; the unit-reviewer checks the files load in the browser, and unit 1.03 owns the Workers Builds build and deploy commands.
+
+## 2026-10-07: Unit review
+
+**Done**
+- Ran the `unit-reviewer` agent on the rebased branch. Verdict "Fix needed", nothing Blocking, three Should fix items and some notes:
+  1. Should fix: with `secureHeaders()`' default `Referrer-Policy: no-referrer`, Chromium sent `Origin: null` on a plain same-site form post, which passed `csrf()` only through `Sec-Fetch-Site`. Phones without `Sec-Fetch-Site` (Safari before 16.4) would have been refused every plain form post. Fixed: referrer policy `same-origin`. Added tests for the browser-shaped headers (`Origin: null` with `same-origin` passes, with `cross-site` gets 403).
+  2. Should fix: the committed `worker-configuration.d.ts` was stale, so `wrangler dev` warned "types might be out of date". It had been generated before `src/index.ts` existed. Regenerated; the generated file now declares the main module, so the hand-written declaration in `test/env.d.ts` is gone. This corrects the earlier entry's line that `wrangler types` doesn't declare the main module: it does, once `src/index.ts` exists.
+  3. Should fix: units 3.01, 3.04 and 1.03 would each have added a secret to `wrangler.jsonc`, `vitest.config.ts` and the generated types. Fixed: both secrets (`HOST_PASSWORD`, `COOKIE_SECRET`) are declared now in `secrets.required`, with test values in `vitest.config.ts` and local values in `.dev.vars.example`. `docs/phases.md` (1.03) updated to match, logged in `general.md`.
+  4. Should fix (minor): the plan's Tests section didn't list `test/security.test.ts`. Fixed.
+  - Notes acted on: a convention that challenges and decoys are numbered 1 to 20 everywhere, a convention that htmx fragments use `c.html()`, shared 404 and 500 pages with a link back to the start (in place of bare text), and a plan line on Node.js compatibility.
+  - Notes left: drizzle-kit leaves an untracked `migrations/meta/_journal.json` when run on the empty schema (harmless, and unit 1.02 commits `meta/` with its first migration); the Node version for Workers Builds is unit 1.03's; parallel appends to `logs/general.md` can conflict, trivially.
+- The reviewer confirmed in a phone-sized Chromium that the start page loads Pico CSS and htmx from `/vendor/`, with no overflow and no console errors, in light and dark mode, and that the code-review decisions above hold.
+
+**Worked**
+- Typecheck and 7 tests pass; `wrangler dev` no longer warns about stale types.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Referrer policy `same-origin`. Why: it keeps the real `Origin` on form posts for the CSRF check while still sending no referrer to other sites.
+- Secrets declared by name in 1.01 instead of 1.03. Why: three units need them and would otherwise conflict on the same lines; declaring a name doesn't need a value until deploy, and `secrets.required` only drives type generation and a local warning.
+- Challenges and decoys are numbered 1 to 20. Why: units 1.02 (content) and 2.02 (assignment) are built in parallel and must agree; the numbers match the test set's names ("Challenge 1").
+- Error pages are in this unit. Why: no other unit owns them, and a player with a stale link should get a way back rather than bare text.
