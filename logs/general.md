@@ -68,5 +68,5 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 **Decisions**
 - Phase sub-folders, even for a small project. Why: the number of phases isn't known yet, and sub-folders keep each plan's path matching its log's.
 - One unit is one PR, and the log entry goes in the same PR as the work. Why: the log then lands on `main` together with the code it describes.
-- Danny approves the phase-by-phase plan, and unit plans are built without a separate OK unless they go beyond it or the scope. Why: the build has to be ready by Thursday, and Danny still reviews every PR. This was put to Danny as a question and can change.
-- A general log for work outside any unit. Why: keeps the record of decisions complete. This was put to Danny as a question and can change.
+- Danny approves the phase-by-phase plan, and unit plans are built without a separate OK unless they go beyond it or the scope. Why: the build has to be ready by Thursday, and Danny still reviews every PR. Danny chose this.
+- A general log for work outside any unit. Why: keeps the record of decisions complete. Danny chose this.
