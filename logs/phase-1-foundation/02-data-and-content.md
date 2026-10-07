@@ -93,3 +93,21 @@ Plan: [docs/phase-1-foundation/02-data-and-content.md](../../docs/phase-1-founda
 
 **Decisions**
 - Status set to Done, pending the second unit review. Why: the remaining work is the review itself; any finding gets its own entry.
+
+## 2026-10-07: Second unit review and merge
+
+**Done**
+- Ran the `unit-reviewer` again on the fixes and the merge with `main`. Verdict "Pass", nothing Blocking or Should fix. It confirmed each fix (fractions refused, the defaults test catches a wrong migration default, the 3.04 and 3.01 lines in `docs/phases.md`, one `CONTENT_SIZE`), typecheck and 110 tests, migrations applying fresh, `db:generate` clean, and both content sets loading under `wrangler dev`.
+- Notes, nothing to change here:
+  - This PR brings the first migrations to `main`, so the first deploy after the merge is the first run of `wrangler d1 migrations apply DB --remote` (unit 1.03). If the production database doesn't exist yet, that build fails harmlessly until Danny creates it. That the trigger and checks work on the remote D1 is inferred from the local runs.
+  - Left to later units, as already recorded: a join racing the start of Game on, two late joiners picking the same challenge (both in unit 2.02's plan), and 3.05 narrowing `Player.challenge` (`number | null`) to the `number` scoring needs.
+- Merged the PR with a merge commit.
+
+**Worked**
+- CI's `check` job green on the final commit, no conflicts with `main`.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- None.
