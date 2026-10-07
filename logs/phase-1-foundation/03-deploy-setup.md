@@ -168,3 +168,22 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 - README step 5 says to delete an existing `DEPLOY_API_TOKEN` to try the build's own token, and step 6 no longer says the first build fails "because step 5 wasn't done". Why: step 5 is now optional, so the old wording contradicted it.
 - The plan's status is back to In progress, its Tests list the script check, and "Done when" now needs a successful build on `main`. Why: the unit's goal, deploys on every push, isn't met yet.
 - The secret's token stays in use for `wrangler deploy` too, not only for the migrations. Why: with no `database_id`, `wrangler deploy` also looks the database up by name, which needs D1; a token without D1 would fail on the first deploy over the Hello World Worker, which has no D1 binding yet.
+
+## 2026-10-07: Unit review of the build-token change
+
+**Done**
+- Ran the `unit-reviewer` agent on PR #19. Verdict: fix needed, no Blocking findings, four Should fix. All four fixed as below. Typecheck, tests (285) and `wrangler build` passed in its run.
+- Rechecked the token part of `scripts/deploy.sh` on its own, without the `wrangler` calls (the session's deny rules now block running the script, which is what they are for): a clean token, whitespace around and inside, whitespace only, a non-breaking space, and a token in quotes.
+
+**Worked**
+- The reviewer reproduced Danny's two errors exactly against a local fake API with a fake token (`wrangler d1 info`, no `--remote`). The 9109 on `/accounts` comes from Wrangler's automatic `whoami` after the 10000. A valid token that only lacks D1, or belongs to another account, would get a normal answer from `/accounts`, so "Invalid access token" means Cloudflare didn't accept the value at all (inferred from Wrangler's code, not seen).
+
+**Didn't work**
+- The previous entry's theory that whitespace made Cloudflare reject the token was wrong for trailing whitespace: Wrangler sends the header through undici, which trims spaces, tabs and newlines at both ends, and a leading newline gives a local error instead of 9109. Only a leading space or tab, or whitespace inside the value, would have reached Cloudflare. Also a slip in the entry before that: the fail-fast check it mentions was built two entries earlier, not in the one just before.
+
+**Decisions**
+- README step 5 now says first, without any condition, to delete an existing `DEPLOY_API_TOKEN` and retry. Why: Danny still has it set, so the old wording ("skip unless a log says the build's own token was used") would never have led to the test this change exists for. The failure it names is now "an authentication error on a `/d1/` request", since a token with D1 Read could pass the name lookup and fail later on a query.
+- The script prints the cleaned token's length, how many whitespace characters it removed, and a warning when the token has anything but letters, digits, `_` and `-`. Why: removing whitespace silently hid what was wrong, and the likeliest causes of 9109 left are a value that isn't the token (an ID, part of it, quotes, a non-breaking space), which this shows without showing the value.
+- The variable listing also covers `WRANGLER_*`, `WORKERS_*` and the proxy variables. Why: `WRANGLER_API_ENVIRONMENT` and `HTTPS_PROXY` change where Wrangler sends its calls, which is the other theory left; names only, as before.
+- Step 6 says the deploy step's first lines name the token used. The plan's Work 1 and 5 and its Tests now describe all of the above.
+- Not done: `wrangler whoami` in the script. Why: the migrations call already shows whether the token works, and the new length and character check covers "is this a real token" without printing account details.

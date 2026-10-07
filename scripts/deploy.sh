@@ -4,12 +4,19 @@
 set -eu
 
 # Names only, never values, to show which Cloudflare settings the build has.
-echo "Cloudflare variables in this build: $(awk 'BEGIN { for (k in ENVIRON) if (k ~ /^(CLOUDFLARE|CF)_/) print k }' | sort | tr '\n' ' ')"
+# These are the ones that decide which token Wrangler uses and where its API
+# calls go.
+echo "Cloudflare, Wrangler and proxy variables in this build: $(awk 'BEGIN { for (k in ENVIRON) if (k ~ /^(CLOUDFLARE|CF|WRANGLER|WORKERS)_/ || tolower(k) ~ /^(https?|no|all)_proxy$/) print k }' | sort | tr '\n' ' ')"
 
 # API tokens contain no whitespace, so a pasted newline or space is dropped.
-token=$(printf '%s' "${DEPLOY_API_TOKEN:-}" | tr -d '[:space:]')
+# The log gets the token's length and what was dropped, never its value.
+raw=${DEPLOY_API_TOKEN:-}
+token=$(printf '%s' "$raw" | tr -d '[:space:]')
 if [ -n "$token" ]; then
-  echo "Using the API token in the DEPLOY_API_TOKEN build secret."
+  echo "Using the API token in the DEPLOY_API_TOKEN build secret: ${#token} characters, after removing $((${#raw} - ${#token})) whitespace characters."
+  case $token in
+    *[![:alnum:]_-]*) echo "Warning: DEPLOY_API_TOKEN contains characters an API token never has (only letters, digits, _ and - are expected). Copy the token again; see README.md, \"Deploying\", step 5." >&2 ;;
+  esac
   export CLOUDFLARE_API_TOKEN="$token"
 else
   echo "Using the token Workers Builds provides."
