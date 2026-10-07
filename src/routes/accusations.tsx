@@ -63,7 +63,7 @@ const savedText = (content: Content, guess: number | null) =>
 // line never sits under a different pick.
 const statusScript = (text: string) =>
   `this.querySelector('[role=status]').textContent = ${JSON.stringify(text)}`
-const NOT_SAVED = 'Not saved. Check your signal and pick again.'
+const NOT_SAVED = 'Not saved. Check your signal and tap Save.'
 // A save that hangs on a bad signal gives up after 15 seconds and says so,
 // rather than showing "Saving…" (and pausing the poll) for as long as it hangs.
 const SAVE_TIMEOUT_MS = 15_000

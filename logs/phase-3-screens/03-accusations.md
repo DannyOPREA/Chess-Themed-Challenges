@@ -91,3 +91,21 @@ Plan: [docs/phase-3-screens/03-accusations.md](../../docs/phase-3-screens/03-acc
 
 **Decisions**
 - A 15-second timeout for a save. Why: long enough for a slow pub connection to get through, short enough that a player who looks at the row sees "Not saved" before they move on.
+
+## 2026-10-07: Third unit review
+
+**Done**
+- Ran the `unit-reviewer` agent a third time. Verdict "Pass", nothing blocking or to fix. It confirmed the Back button now shows the saved guess after a failed save, a hung save gives "Not saved" after 15 seconds and the poll resumes, a second pick queued behind a hung one is still saved, and no spoilers in 65 saved responses. Its notes:
+  - "Not saved" can show when the save did reach the server but its answer was late; nothing wrong is stored. But "pick again" doesn't work when the player wants the same pick, as choosing the same option sends nothing. Fixed: the text is now "Not saved. Check your signal and tap Save.", and Save resends the current pick.
+  - After a timeout, a queued second pick can be sent while the first is still on its way, so in theory they could arrive out of order. Left: both go over one connection, the reviewer saw no reordering, and the row shows what the last answer saved.
+  - The Back button with the browser's back-forward cache couldn't be tested headless. Left: a cached page comes back whole, with its "Not saved" line still showing.
+  - htmx logs its timeout and error events as console errors. Left: those are htmx's own messages for the failures the row reports.
+
+**Worked**
+- Nothing new beyond the above.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- No further review run for the wording change. Why: it changes only the text of one message, which no test or other code depends on.
