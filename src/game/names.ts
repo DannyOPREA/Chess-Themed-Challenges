@@ -15,6 +15,6 @@ export const cleanName = (name: string): string =>
     .replace(/(?!\u200D)[\p{Cc}\p{Cf}]/gu, '')
     // The zero-width joiner stays only where it joins two emoji into one,
     // such as "👩‍💻".
-    .replace(/(?<!\p{Extended_Pictographic}\uFE0F?)\u200D|\u200D(?!\p{Extended_Pictographic})/gu, '')
+    .replace(/(?<![\p{Extended_Pictographic}\p{Emoji_Modifier}]\uFE0F?)\u200D|\u200D(?!\p{Extended_Pictographic})/gu, '')
     .replace(/ +/g, ' ')
     .trim()

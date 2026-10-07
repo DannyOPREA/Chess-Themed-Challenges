@@ -72,3 +72,20 @@ Plan: [docs/phase-3-screens/01-join-and-rejoin.md](../../docs/phase-3-screens/01
 - `unit-reviewer` (note): after accusations close, the intro and the error both said the game was closed. Fixed: the error now says nobody has joined with that name and to check the spelling.
 - `unit-reviewer` (notes, not changed): the PIN message has no full stop (it is shared with 3.04's file, so left as main has it); `aria-invalid` marks both fields on any error (both fields are re-entered anyway); an `http://` request would get a cookie without `Secure` (workers.dev redirects to HTTPS).
 - `unit-reviewer` (checked, fine): 3.04's Game-on batch only writes while the game is in the Lobby and the late joiner only writes in Game on, so the two can't overlap; a player missed by the host's batch is assigned on their next screen, which the coordinator asked to confirm.
+
+## 2026-10-07: Second unit review
+
+**Done**
+- Ran the `unit-reviewer` again on the fixes. Verdict "Pass", nothing Blocking or Should fix. It confirmed the new phase test fails with the condition removed, the reworded closed-game page, and emoji names in the browser.
+- Acted on its two notes (below). Typecheck and 218 tests pass.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- The first emoji fix still split emoji with a skin tone, such as "🏃🏽‍♂️", because the skin-tone modifier isn't itself an emoji.
+
+**Decisions**
+- Note: the zero-width joiner now also stays after a skin-tone modifier, with a test. Why: iPhones produce these often. Tag-sequence flags (such as England's) still lose their tag characters and show as a plain flag. Why not fixed: cosmetic, rejoining still works, and allowing tag characters would let invisible characters back into names.
+- Note: a wrong PIN once accusations close now says "That PIN doesn't match that name. Check your PIN, or ask the host to reset it." Why: the usual advice to choose a different name doesn't help when new names can't join.
+- Merge with a merge commit once CI's `check` job is green. Why: the working agreement.

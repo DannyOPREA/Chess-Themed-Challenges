@@ -199,6 +199,8 @@ describe('joining', () => {
   it('keeps emoji made of several joined parts whole', async () => {
     await joinedCookie('Coder \u{1F469}\u200D\u{1F4BB}', '1234')
     expect((await allPlayers())[0]?.name).toBe('Coder \u{1F469}\u200D\u{1F4BB}')
+    await joinedCookie('Tone \u{1F469}\u{1F3FD}\u200D\u{1F4BB}', '1234')
+    expect((await allPlayers())[1]?.name).toBe('Tone \u{1F469}\u{1F3FD}\u200D\u{1F4BB}')
     expect((await join('Al\u200Dex', '1234')).status).toBe(303)
     expect((await allPlayers()).map((p) => p.name)).toContain('Alex')
   })
@@ -232,6 +234,8 @@ describe('joining', () => {
       expect(res.status).toBe(400)
       expect(await res.text()).toContain(GAME_CLOSED)
       expect(cookieFrom(res)).toBeUndefined()
+      const wrong = await join('Sam', '9999')
+      expect(await wrong.text()).toContain('That PIN doesn&#39;t match that name.')
       await joinedCookie('Sam', '1234')
     }
     expect((await allPlayers()).map((p) => p.name)).toEqual(['Sam'])

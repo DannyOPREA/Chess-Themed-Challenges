@@ -36,6 +36,8 @@ const joinSchema = z.object({
 
 const NAME_TAKEN =
   "That name is already taken. If it's you, check your PIN; if not, choose a different name."
+// Once new players can't join, choosing another name doesn't help.
+const WRONG_PIN = "That PIN doesn't match that name. Check your PIN, or ask the host to reset it."
 const GAME_CLOSED =
   'Nobody has joined with that name, and new players can no longer join. Check the spelling of your name.'
 
@@ -128,7 +130,8 @@ home.post(
       if (!player) return renderJoin(c, await getPhase(db), name, GAME_CLOSED)
     }
     if (player !== created && !(await verifyPin(pin, player))) {
-      return renderJoin(c, await getPhase(db), name, NAME_TAKEN)
+      const phase = await getPhase(db)
+      return renderJoin(c, phase, name, phaseAllows(phase, 'join') ? NAME_TAKEN : WRONG_PIN)
     }
 
     // A late joiner during Game on gets their challenge and decoy now.
