@@ -86,3 +86,18 @@ Plan: [docs/phase-2-game-rules/01-scoring-and-detection.md](../../docs/phase-2-g
 
 **Decisions**
 - None new.
+
+## 2026-10-07: Players with no challenge (unit 3.05)
+
+**Done**
+- In unit 3.05's PR: `ScoringPlayer` and `PlayerScore` allow `challenge` and `decoy` to be `null`, for a player who never got one. Such a player scores 0 challenge points and is never detected; guesses about them are ignored; their own guesses count. Three tests added to `test/scoring.test.ts`. The plan's types, rules and tests are updated to match.
+
+**Worked**
+- The change was small: `judge()` skips guesses about such a player, and the challenge points check for a missing challenge.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Scored here rather than left out by the reveal. Why: the earlier entries left this to 3.05; keeping them in `scoreGame` means one ranking for everyone, so they appear on the leaderboard with a shared rank like anyone else.
+- Guesses about a player with no challenge are ignored, not counted as wrong (−1). Why: the scope's table doesn't cover it; the player had nothing to guess, which is the app's fault, not the accuser's, and removed players are already treated the same way. In practice such a player can hardly exist (3.01 assigns anyone found unassigned on any screen during Game on).

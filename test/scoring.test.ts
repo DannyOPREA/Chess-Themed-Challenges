@@ -75,7 +75,7 @@ describe('the scoring table', () => {
   it('gives nothing for the decoy', () => {
     // Bob guesses Alice's decoy, not her challenge: wrong, and she stays undetected.
     const alice = player(1, 'Alice', true)
-    const s = scoreGame([alice, player(2, 'Bob', false)], [guess(2, 1, alice.decoy)])
+    const s = scoreGame([alice, player(2, 'Bob', false)], [guess(2, 1, alice.decoy!)])
     expect(scoreOf(s, 1)).toMatchObject({ detected: false, total: 5 })
     expect(scoreOf(s, 2)).toMatchObject({ total: -1 })
   })
@@ -189,6 +189,39 @@ describe('detection', () => {
       ['Alice', 1],
       ['Bob', 2],
     ])
+  })
+})
+
+// A player who never got a challenge and decoy (unit 3.05).
+function unassigned(id: number, name: string, completed = false): ScoringPlayer {
+  return { id, name, challenge: null, decoy: null, completed }
+}
+
+describe('a player with no challenge', () => {
+  it('scores no challenge points, even if marked completed', () => {
+    const s = scoreOf(scoreGame([unassigned(1, 'Alice', true), player(2, 'Bob', false)], []), 1)
+    expect(s).toMatchObject({ challenge: null, decoy: null, challengePoints: 0, detected: false, total: 0 })
+  })
+
+  it('ignores guesses about them, which neither score nor cost a point', () => {
+    const players = [unassigned(1, 'Alice'), player(2, 'Bob', false), player(3, 'Cara', false)]
+    const scores = scoreGame(players, [guess(2, 1, 1), guess(3, 1, 5)])
+    expect(scoreOf(scores, 1)).toMatchObject({ detected: false, detectedBy: [] })
+    expect(scoreOf(scores, 2)).toMatchObject({ correctAccusations: [], wrongAccusations: [], total: 0 })
+    expect(scoreOf(scores, 3)).toMatchObject({ correctAccusations: [], wrongAccusations: [], total: 0 })
+    expect(detect(players, [guess(2, 1, 1)]).get(1)).toEqual([])
+  })
+
+  it('scores their own guesses and ranks them with everyone else', () => {
+    const players = [unassigned(1, 'Alice'), player(2, 'Bob', true), player(3, 'Cara', false)]
+    // Alice guesses Bob right (+2) and Cara wrong (-1), so Bob is detected (+1).
+    const scores = scoreGame(players, [guess(1, 2, 2), guess(1, 3, 4)])
+    expect(scores.map((s) => [s.name, s.total, s.rank])).toEqual([
+      ['Alice', 1, 1],
+      ['Bob', 1, 1],
+      ['Cara', 0, 3],
+    ])
+    expect(scoreOf(scores, 2).detectedBy).toEqual([{ id: 1, name: 'Alice' }])
   })
 })
 
