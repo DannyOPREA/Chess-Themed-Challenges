@@ -5,6 +5,7 @@ import {
   type RandomSource,
   assignOne,
   assignPlayers,
+  isEvenlyAssigned,
 } from '../src/game/assignment'
 
 // A small seeded random source (mulberry32), so failures can be reproduced.
@@ -58,7 +59,7 @@ describe('assigning the lobby at the start of Game on', () => {
   })
 
   it('uses every challenge and decoy exactly once with exactly 20 players', () => {
-    const assigned = assignPlayers(lobby(20))
+    const assigned = assignPlayers(lobby(20), { random: seeded(20) })
     expect(counts(assigned.map((p) => p.challenge))).toEqual(new Array(20).fill(1))
     expect(counts(assigned.map((p) => p.decoy))).toEqual(new Array(20).fill(1))
   })
@@ -80,6 +81,8 @@ describe('assigning the lobby at the start of Game on', () => {
     }
   })
 
+  // Unseeded on purpose, to check the default; it can't flake, because
+  // uniqueness holds for every random sequence.
   it('works with the default random source', () => {
     for (let i = 0; i < 50; i++) {
       const assigned = assignPlayers(lobby(20))
@@ -168,11 +171,16 @@ describe('late joiners', () => {
     }
   })
 
-  it('get a number freed by a removed player', () => {
-    const players = assignPlayers(lobby(20), { random: seeded(4) })
-    const removed = players.find((p) => p.challenge === 1)!
-    const remaining = players.filter((p) => p !== removed)
-    expect(assignOne(remaining, { random: seeded(5) }).challenge).toBe(1)
+  it('beyond 20 players get a number freed by a removed player', () => {
+    for (const seed of SEEDS) {
+      // 21 players: one number is held twice, the rest once. Removing a player
+      // who alone holds a number frees it, and the next joiner must get it.
+      const players = assignPlayers(lobby(21), { random: seeded(seed) })
+      const held = counts(players.map((p) => p.challenge))
+      const removed = players.find((p) => held[p.challenge - 1] === 1)!
+      const remaining = players.filter((p) => p !== removed)
+      expect(assignOne(remaining, { random: seeded(seed + 1) }).challenge).toBe(removed.challenge)
+    }
   })
 
   it('beyond 20 players get a number that as few others hold as possible', () => {
@@ -239,11 +247,57 @@ describe('randomness', () => {
   })
 
   it('stays in range at the edges of the random source', () => {
-    for (const edge of [0, 0.5, 0.999999999, 1]) {
+    for (const edge of [-0.5, 0, 0.5, 0.999999999, 1, 1.5]) {
       const assigned = assignPlayers(lobby(25), { random: () => edge })
       expectInRange(assigned.map((p) => p.challenge))
       expectInRange(assigned.map((p) => p.decoy))
       expect(new Set(assigned.slice(0, 20).map((p) => p.challenge)).size).toBe(20)
     }
+  })
+})
+
+describe('bad stored values', () => {
+  it('treats a missing (undefined) value like null', () => {
+    const players = [{ challenge: undefined, decoy: undefined }] as unknown as AssignmentSlot[]
+    const assigned = assignPlayers(players, { random: seeded(1) })
+    expect(assigned).toHaveLength(1)
+    expectInRange([assigned[0]!.challenge, assigned[0]!.decoy])
+  })
+
+  it('refuses numbers outside 1 to 20 instead of treating them as free', () => {
+    for (const bad of [0, 21, -1, 1.5, Number.NaN]) {
+      const players: AssignmentSlot[] = [{ challenge: bad, decoy: 1 }, { challenge: null, decoy: null }]
+      expect(() => assignPlayers(players)).toThrow(RangeError)
+      expect(() => assignOne(players)).toThrow(RangeError)
+      expect(() => isEvenlyAssigned(players)).toThrow(RangeError)
+    }
+  })
+})
+
+describe('re-checking after a write', () => {
+  it('passes everything the assignment functions produce', () => {
+    for (const size of [0, 1, 7, 20, 21, 33, 40]) {
+      const random = seeded(size)
+      const players: AssignmentSlot[] = assignPlayers(lobby(size), { random })
+      expect(isEvenlyAssigned(players)).toBe(true)
+      players.push(assignOne(players, { random }))
+      expect(isEvenlyAssigned(players)).toBe(true)
+    }
+  })
+
+  it('catches two players sharing a challenge or a decoy while others are free', () => {
+    expect(isEvenlyAssigned([{ challenge: 7, decoy: 1 }, { challenge: 7, decoy: 2 }])).toBe(false)
+    expect(isEvenlyAssigned([{ challenge: 1, decoy: 7 }, { challenge: 2, decoy: 7 }])).toBe(false)
+  })
+
+  it('catches uneven reuse beyond 20 players', () => {
+    const players: AssignmentSlot[] = assignPlayers(lobby(20), { random: seeded(9) })
+    // A 21st and 22nd player both on challenge 1 leaves it held three times.
+    players.push({ challenge: 1, decoy: 1 }, { challenge: 1, decoy: 2 })
+    expect(isEvenlyAssigned(players)).toBe(false)
+  })
+
+  it('ignores players not yet assigned', () => {
+    expect(isEvenlyAssigned([{ challenge: 3, decoy: 4 }, { challenge: null, decoy: null }])).toBe(true)
   })
 })

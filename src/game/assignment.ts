@@ -23,21 +23,33 @@ export type AssignOptions = {
 }
 
 /**
- * Picks one number from 1 to CONTENT_SIZE at random among those held by the
- * fewest entries of `held`. Values outside 1 to CONTENT_SIZE are ignored.
+ * How many of `held` hold each number, index `n - 1` for number `n`. Missing
+ * values (`null` or `undefined`) are skipped; anything else outside 1 to
+ * CONTENT_SIZE is a corrupt row and throws, rather than being quietly treated
+ * as free.
  */
-function pickLeastUsed(held: readonly (number | null)[], random: RandomSource): number {
+function countHeld(held: readonly (number | null | undefined)[]): number[] {
   const counts = new Array<number>(CONTENT_SIZE).fill(0)
   for (const n of held) {
-    if (n !== null && Number.isInteger(n) && n >= 1 && n <= CONTENT_SIZE) counts[n - 1]! += 1
+    if (n == null) continue
+    if (!Number.isInteger(n) || n < 1 || n > CONTENT_SIZE) {
+      throw new RangeError(`Assigned number ${n} is not between 1 and ${CONTENT_SIZE}`)
+    }
+    counts[n - 1]! += 1
   }
+  return counts
+}
+
+/** Picks one number at random among those the fewest entries of `held` hold. */
+function pickLeastUsed(held: readonly (number | null)[], random: RandomSource): number {
+  const counts = countHeld(held)
   const fewest = Math.min(...counts)
   const candidates: number[] = []
   counts.forEach((count, i) => {
     if (count === fewest) candidates.push(i + 1)
   })
-  // Clamped so a random source that returns exactly 1 can't index past the end.
-  const index = Math.min(Math.floor(random() * candidates.length), candidates.length - 1)
+  // Clamped so a random source outside [0, 1) can't index past either end.
+  const index = Math.max(0, Math.min(Math.floor(random() * candidates.length), candidates.length - 1))
   return candidates[index]!
 }
 
@@ -58,13 +70,13 @@ export function assignPlayers<T extends AssignmentSlot>(
   const decoys = players.map((p) => p.decoy)
   const assigned: (T & Assignment)[] = []
   for (const player of players) {
-    if (player.challenge !== null && player.decoy !== null) continue
+    if (player.challenge != null && player.decoy != null) continue
     let { challenge, decoy } = player
-    if (challenge === null) {
+    if (challenge == null) {
       challenge = pickLeastUsed(challenges, random)
       challenges.push(challenge)
     }
-    if (decoy === null) {
+    if (decoy == null) {
       decoy = pickLeastUsed(decoys, random)
       decoys.push(decoy)
     }
@@ -86,4 +98,19 @@ export function assignOne(
     challenge: pickLeastUsed(current.map((p) => p.challenge), random),
     decoy: pickLeastUsed(current.map((p) => p.decoy), random),
   }
+}
+
+/**
+ * Whether the players' numbers follow the rule above: no challenge, and no
+ * decoy, is held by more than one player more than any other. With 20 or
+ * fewer players that means no two share a challenge or a decoy. Callers use
+ * it to re-check after writing, because two phones joining at the same moment
+ * can both pick from the same free numbers; a late joiner whose new numbers
+ * fail the check hasn't been shown them yet and can safely pick again.
+ */
+export function isEvenlyAssigned(players: readonly AssignmentSlot[]): boolean {
+  return [players.map((p) => p.challenge), players.map((p) => p.decoy)].every((held) => {
+    const counts = countHeld(held)
+    return Math.max(...counts) - Math.min(...counts) <= 1
+  })
 }

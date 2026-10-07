@@ -34,3 +34,26 @@ Plan: [docs/phase-2-game-rules/02-assignment.md](../../docs/phase-2-game-rules/0
 - `CONTENT_SIZE` (20) is defined here. Why: assignment only needs the count, and importing 1.02's content would tie the units together; 1.02's tests check each set has 20.
 - `Math.random` by default, injectable for tests. Why: it's random enough for a pub game, and nothing a player sees depends on predicting it, as assignments never leave the server before the reveal.
 - Making the database read and write safe when two phones join at once is left to 3.01 and 3.04. Why: these functions don't touch the database; the plan's "Not in this unit" records it so those units don't miss it.
+
+## 2026-10-07: Reviews
+
+**Done**
+- Ran `/code-review` at `high` on the branch against `main`, and the `unit-reviewer` agent. Fixed or answered every finding (below), and updated the plan to match.
+
+**Worked**
+- `unit-reviewer`: Pass, nothing Blocking or Should fix. It did not run the app, as no app code changed (the functions aren't called by any route yet). It checked the distribution of the 5th lobby player's challenge over 200,000 runs: every number came up between 9,762 and 10,170 times against 10,000 expected.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- `/code-review`: two phones joining at once can both pick the same free number, and the API gave callers no way to notice. Fixed: added `isEvenlyAssigned` and wrote a suggested safe pattern for 3.01 and 3.04 into the plan. Why: D1 can't read and then write conditionally inside one transaction from a Worker, so the caller needs a cheap re-check after writing; the joiner hasn't seen their numbers yet, so re-picking doesn't break "never changes".
+- `/code-review` and `unit-reviewer`: an `undefined` value counted as assigned, so such a player would never be assigned. Fixed: `== null` checks, with a test.
+- `/code-review`: stored numbers outside 1 to 20 were quietly ignored, leaving that player with an invalid challenge and their number counted as free. Fixed: they throw a `RangeError`, with a test. Why: a corrupt row should fail loudly rather than hand out a duplicate.
+- `/code-review`: two tests used the unseeded `Math.random`. Fixed the 20-player one; kept the "default random source" test unseeded on purpose, with a comment. Why: it exists to check the default, and uniqueness holds for every sequence, so it can't flake.
+- `/code-review`: `assignOne` could reuse `assignPlayers`. Not changed. Why: through `assignPlayers`, any unassigned players in the list would be given numbers first, changing what the joiner gets; both already share `pickLeastUsed`, so the rule lives in one place.
+- `/code-review`: support for half-assigned players is unneeded. Not changed. Why: it is a few lines, never wrong, and keeps a held value unchanged, which is the rule that matters; nothing creates such rows today.
+- `/code-review`: the clamp for a random value of 1 guards a case the type rules out. Kept, and widened to negative values after `unit-reviewer` showed a negative value gave `undefined`. Why: one line, and a broken injected source then still yields a valid number.
+- `unit-reviewer`: the removed-player test repeated the 19-held one. Replaced it with the case beyond 20: 21 players, remove one who alone holds a number, and the next joiner gets it.
+- `unit-reviewer`: numbers shared beyond 20 stay shared if players are later removed. Recorded in the plan, no code change. Why: assignments never change (`scope.md`).
+- `unit-reviewer`: the race must actually be handled in 3.01 and 3.04. Recorded in the plan's "Not in this unit" with the suggested pattern.
