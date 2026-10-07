@@ -25,8 +25,8 @@ The player's home screen at `/play`, where players land after joining: their own
    - The status section shows the phase and:
      - Lobby: the challenge and decoy appear, and accusations open, when the game starts; read the hints meanwhile.
      - Game on, Accusations closed and Reveal: the player's own challenge (name and description) with the completion status, and their decoy (name and description), marked optional and not affecting the score. A player with no challenge sees a line saying so instead.
-     - Game on: "I've done it", or "Undo: I haven't done it" once marked, and a "Make or change accusations" link to the accusations screen (`/accuse`, unit 3.03).
-     - Accusations closed: the completion is frozen ("tell the host if it's wrong"), and a link to see your accusations (`/accuse`).
+     - Game on: "I've done it", or "Undo: I haven't done it" once marked (the form's `hx-sync` cancels a poll in flight, so an older poll answer can't land after the tap), and a "Make or change accusations" link to the accusations screen (`/accuse`, unit 3.03).
+     - Accusations closed: the completion ("Not marked done" rather than "Not done yet" from here on) is frozen ("tell the host if it's wrong"), and a link to see your accusations (`/accuse`).
      - Reveal: a "See the results" link to the reveal (`/reveal`, unit 3.05).
    - The hint list: all 20 challenge names, in content order, each with its hint, in every phase. No descriptions.
    - `GET /play/status`: the 10-second htmx poll. It sends the state key it last saw (phase, assigned, completed); while that still matches it gets `204 No Content`, which htmx doesn't swap, otherwise the new status section. A section showing a notice has a key no poll matches, so the next poll clears the notice. When the phase has just become Reveal (the key it last saw is from another phase), the poll answers `HX-Redirect: /reveal`, so phones on this screen move to the results on their own; a plain visit to `/play` in the Reveal shows the screen with its link.

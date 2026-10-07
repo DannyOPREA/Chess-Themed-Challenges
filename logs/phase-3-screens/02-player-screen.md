@@ -61,3 +61,23 @@ Plan: [docs/phase-3-screens/02-player-screen.md](../../docs/phase-3-screens/02-p
 **Decisions**
 - In the Reveal, the poll redirects to the results once (`HX-Redirect: /reveal` when the key it last saw is from another phase), but a plain visit to `/play` doesn't redirect. Why: 3.05 suggested always redirecting; this moves everyone over on their own at the big moment, while players can still come back to the hint list and the log-out button, and `/play` and `/reveal` can never redirect to each other in a loop.
 - Until 3.03 and 3.05 merge, the links give the 404 page. Why: the three units are built in parallel; the Reveal and accusations can't be reached on `main` meaningfully until they land, and nobody plays on `main` before then.
+
+## 2026-10-07: Unit review
+
+**Done**
+- Ran the `unit-reviewer` agent on the first commit of the branch. Verdict "Pass", nothing Blocking or Should fix. It played the screen at phone size with five players and the host through every phase, one browser without JavaScript, a late joiner, a rejoin on a fresh browser, stale-screen taps after accusations closed, host overrides picked up by the poll, and Back after logging out (which reloaded to the join page). It found no other player's details in any page, poll or post response.
+- Acted on its notes (below). Typecheck and 243 tests pass.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Note: the "That wasn't saved" notice never cleared. Already fixed after the code review (the next poll clears it); the reviewer saw the earlier commit.
+- Note: a tampered htmx post got a redirect. Already fixed after the code review (204).
+- Note: "Not done yet." reads oddly once completions are frozen. Fixed: "Not marked done." from Accusations closed on, with a test.
+- Note: a poll and a tap could cross. Fixed: the form has `hx-sync="closest section:replace"`, so a tap cancels a poll in flight on the status section.
+- Note: the Game on poll test sets the numbers in the database rather than through the host's assignment. Not changed. Why: the host's assignment and `ensureAssigned` have their own tests (3.04, 3.01); this test is about the poll picking up the change.
+- Ran the reviewer again on the final branch, because the code changed after its first run (next entry).

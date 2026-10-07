@@ -148,6 +148,8 @@ describe('the player screen', () => {
     expect(html).toContain('<h3>Challenge 3</h3>')
     expect(html).toContain('You&#39;ve marked it done.')
     expect(html).toContain('tell the host')
+    await db.update(players).set({ completed: false }).where(eq(players.id, sam.id))
+    expect(await page(cookie)).toContain('Not marked done.')
     expect(html).not.toContain('/play/done')
     expect(html).toContain('See your accusations')
     expect(html).not.toContain('/reveal')

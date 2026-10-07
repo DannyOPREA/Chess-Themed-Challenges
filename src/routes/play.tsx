@@ -38,11 +38,24 @@ const stateKey = (phase: Phase, player: Player, notice?: Notice) =>
 const Completion = ({ phase, completed }: { phase: Phase; completed: boolean }) => (
   <footer>
     <p>
-      {completed ? <strong>✓ You've marked it done.</strong> : <strong>Not done yet.</strong>}
+      {completed ? (
+        <strong>✓ You've marked it done.</strong>
+      ) : (
+        <strong>{phase === 'game_on' ? 'Not done yet.' : 'Not marked done.'}</strong>
+      )}
     </p>
     {phaseAllows(phase, 'markOwnCompletion') ? (
       // Sends the state wanted rather than a toggle, so a double tap is harmless.
-      <form method="post" action="/play/done" hx-post="/play/done" hx-target="#status" hx-swap="outerHTML">
+      // `hx-sync` cancels a poll in flight, so a poll answer read before the
+      // tap can't land after it and show the old state.
+      <form
+        method="post"
+        action="/play/done"
+        hx-post="/play/done"
+        hx-target="#status"
+        hx-swap="outerHTML"
+        hx-sync="closest section:replace"
+      >
         <input type="hidden" name="completed" value={completed ? 'false' : 'true'} />
         {completed ? (
           <button type="submit" class="secondary outline">
