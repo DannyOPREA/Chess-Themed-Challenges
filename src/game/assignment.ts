@@ -107,8 +107,10 @@ export function assignOne(
  * (`others` must leave that player out). It always holds for a fresh
  * `assignOne` pick, and fails when someone else took the same free number in
  * the meantime: two phones joining at the same moment can both pick from the
- * same free numbers. Callers re-check a late joiner with it after writing; a
- * joiner who fails hasn't been shown their numbers yet and can pick again.
+ * same free numbers. Tests use it to check assignments. Late joiners are not
+ * re-checked with it after writing: an assignment can't be changed once
+ * written (migrations/0002), so unit 3.01 checks for a clash inside the write
+ * instead (`assignLateJoiner` in src/db/players.ts).
  */
 export function isLeastHeld(others: readonly AssignmentSlot[], player: Assignment): boolean {
   const ok = (held: readonly (number | null)[], n: number) => {
