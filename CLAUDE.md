@@ -27,6 +27,17 @@ The project scaffold must provide these npm scripts. Keep the names: the session
 - `npm run db:generate`: generate a migration from the Drizzle schema
 - `npm run db:migrate:local`: apply migrations to the local D1
 
+## Plans and logs ("project partitioning")
+
+Danny's way of working: the build is split into phases, each phase into units, and every unit has a build plan in `docs/` and a matching log in `logs/`.
+
+- `docs/scope.md` is the spec and `docs/phases.md` is the phase-by-phase plan (written once the phases are agreed). Each unit's build plan is `docs/phase-<N>-<slug>/<NN>-<slug>.md`. One unit is one PR. Naming, statuses and the plan template are in `docs/README.md`.
+- Every build plan has a log at the same path under `logs/`: a dated record of what was done, what worked, what didn't, and each decision with its reason. Entry format and rules are in `logs/README.md`.
+- Danny approves `docs/phases.md`. A unit plan that stays within it and `docs/scope.md` needs no separate OK; it is built in the same PR.
+- Before working on a unit, read its plan and its log.
+- Work on the app that isn't in any unit's plan gets a plan first, or is added to the plan of the unit it belongs to. Setup and process work that belongs to no unit is logged in `logs/general.md`.
+- In the same PR as the work: keep the plan matching what was actually built, update its status, and append a log entry.
+
 ## Rules
 
 1. **Reuse before writing.** For any solved problem, use a maintained library, a Hono middleware or a Cloudflare service. Custom code is only for the game itself (assignment, accusations, phase rules, detection, scoring) and the screens.
@@ -37,7 +48,7 @@ The project scaffold must provide these npm scripts. Keep the names: the session
 6. Anything under "Not in scope" in `docs/scope.md` needs Danny's OK first.
 7. **Never deploy from a session.** Don't run `wrangler deploy`, `wrangler secret put` or any `--remote` command. Production changes only through Workers Builds when `main` changes.
    The Cloudflare connector, when a session has it, is for looking only: listing resources and read-only (`SELECT`) D1 queries. Don't create, change or delete anything through it unless Danny asks for that specific change in the thread.
-8. Before calling work done, `npm run typecheck` and `npm test` must pass.
+8. Before calling work done, `npm run typecheck` and `npm test` must pass, and the unit's plan and log must be up to date.
 
 ## Claude Code setup in this repo
 
