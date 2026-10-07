@@ -27,6 +27,7 @@
       "Bash(npm run db:generate)",
       "Bash(npm run db:generate *)",
       "Bash(npm run db:migrate:local)",
+      "Bash(npm run cf-typegen)",
       "Bash(npx vitest *)",
       "Bash(npx tsc --noEmit)",
       "Bash(npx tsc --noEmit *)",
