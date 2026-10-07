@@ -5,6 +5,7 @@ import { raw } from 'hono/html'
 import { timingSafeEqual } from 'hono/utils/buffer'
 import { renderSVG } from 'uqr'
 import { z } from 'zod'
+import { pinSchema } from '../auth/pin'
 import { getChallenge, getDecoy, loadContent } from '../content'
 import { createDb } from '../db/client'
 import { getPhase } from '../db/game'
@@ -270,7 +271,7 @@ host.post(
 host.post(
   '/host/players/:id/pin',
   idParam,
-  zValidator('form', z.object({ pin: z.string().regex(/^\d{4}$/) }), (r, c) => {
+  zValidator('form', z.object({ pin: pinSchema }), (r, c) => {
     if (!r.success) return badForm(c)
   }),
   async (c) => {

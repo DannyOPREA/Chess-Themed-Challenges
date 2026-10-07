@@ -18,7 +18,7 @@ The password-protected host page Danny runs the night from: who has joined, movi
 
 ## Work
 
-1. `src/auth/pin.ts`: `hashPin(pin)` (a fresh random salt of 32 hex characters from `crypto.randomUUID()`, and Hono's `sha256` of `salt:pin`, named `pinHash`/`pinSalt` like the columns) and `verifyPin(pin, hash, salt)` (Hono's constant-time `timingSafeEqual`). Shared with unit 3.01, which joins players with it; the file was agreed with that thread so both branches carry the same content.
+1. `src/auth/pin.ts`: `hashPin(pin)` (a fresh random salt of 32 hex characters from `crypto.randomUUID()`, and Hono's `sha256` of `salt:pin`, named `pinHash`/`pinSalt` like the columns), `verifyPin(pin, { pinHash, pinSalt })` (Hono's constant-time `timingSafeEqual`), and `pinSchema` (Zod, exactly four digits). Shared with unit 3.01, which joins players with it; the exports are the ones that thread proposed, so whichever unit merges second keeps the same API.
 2. `src/db/host.ts`, the host page's reads and writes:
    - `listPlayers` (id, name, and whether they have been assigned, in joining order), `getPlayer` (the same plus completion), and `listPlayersWithSecrets` (challenge, decoy and completion too, for "show all" only).
    - `changePhase(db, from, to)`: refuses anything `canChangePhase` doesn't allow; moves the phase only if the game is still in `from` (`UPDATE ... WHERE phase = from`), so a double tap or a stale second tab changes nothing. Starting Game on reads every player, runs `assignPlayers`, and writes every assignment and then the phase change in one `db.batch` (a single transaction). Each assignment is guarded on the player still having no numbers and on the game still being in `from` at that moment, so a run that loses a race writes nothing at all. Returns whether the phase moved.
@@ -58,5 +58,5 @@ The password-protected host page Danny runs the night from: who has joined, movi
 
 - The join page, signed cookies, rejoining, and assigning late joiners, including anyone left without numbers because they joined between the host's read and the Game on batch (3.01).
 - The player screen, accusations and the reveal (3.02, 3.03, 3.05).
-- Logging a player out of other phones when their PIN is reset or they are removed. A removed player's id no longer exists and is never reused, so 3.01's current-player helper treats their cookie as logged out; a PIN reset only matters on the next rejoin.
+- Logging a player out of other phones when their PIN is reset or they are removed. Unit 3.01's cookie holds the player's id and join time, so a removed player's phone is logged out; a PIN reset doesn't log out phones already in, and only matters on the next rejoin.
 - Clearing the game for the switch to real content (4.01).

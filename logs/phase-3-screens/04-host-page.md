@@ -63,3 +63,17 @@ Plan: [docs/phase-3-screens/04-host-page.md](../../docs/phase-3-screens/04-host-
 
 **Decisions**
 - Guard writes on the phase inside the SQL (a subquery on the game row) rather than reading it first. Why: D1 runs each statement atomically, so the guard holds at the moment of the write; a read-then-write leaves a gap a second tab or a double tap can fall into.
+
+## 2026-10-07: PIN helper matched to unit 3.01
+
+**Done**
+- The 3.01 thread proposed the API for `src/auth/pin.ts` at about the same time as this unit sent its own: `hashPin(pin)`, `verifyPin(pin, { pinHash, pinSalt })` and `pinSchema` (Zod, four digits). Switched this unit's file to exactly those exports, and the host's PIN form now uses `pinSchema`. Told that thread.
+
+**Worked**
+- Typecheck and 170 tests pass.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Take 3.01's API. Why: joining is the main user of PIN hashing, and with the same exports on both branches, whichever unit merges second only has to keep one body; nothing else changes.

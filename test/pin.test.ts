@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hashPin, verifyPin } from '../src/auth/pin'
+import { hashPin, pinSchema, verifyPin } from '../src/auth/pin'
 
 describe('PIN hashing', () => {
   it('stores a salted SHA-256 hash, never the PIN', async () => {
@@ -17,11 +17,18 @@ describe('PIN hashing', () => {
   })
 
   it('accepts the right PIN and refuses any other', async () => {
-    const { pinHash, pinSalt } = await hashPin('0042')
-    expect(await verifyPin('0042', pinHash, pinSalt)).toBe(true)
-    expect(await verifyPin('0043', pinHash, pinSalt)).toBe(false)
-    expect(await verifyPin('42', pinHash, pinSalt)).toBe(false)
-    expect(await verifyPin('0042', pinHash, `${pinSalt}0`)).toBe(false)
-    expect(await verifyPin('0042', 'short', pinSalt)).toBe(false)
+    const stored = await hashPin('0042')
+    expect(await verifyPin('0042', stored)).toBe(true)
+    expect(await verifyPin('0043', stored)).toBe(false)
+    expect(await verifyPin('42', stored)).toBe(false)
+    expect(await verifyPin('0042', { ...stored, pinSalt: `${stored.pinSalt}0` })).toBe(false)
+    expect(await verifyPin('0042', { ...stored, pinHash: 'short' })).toBe(false)
+  })
+
+  it('accepts exactly four digits as a PIN', () => {
+    for (const pin of ['0000', '1234', '9999']) expect(pinSchema.safeParse(pin).success).toBe(true)
+    for (const pin of ['', '123', '12345', 'abcd', '12 4', ' 1234', '１２３４']) {
+      expect(pinSchema.safeParse(pin).success, pin).toBe(false)
+    }
   })
 })

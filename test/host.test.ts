@@ -419,8 +419,8 @@ describe("resetting a player's PIN", () => {
     const [saved] = await allPlayers()
     expect(saved?.pinHash).not.toBe('hash')
     expect(saved?.pinSalt).not.toBe('salt')
-    expect(await verifyPin('4821', saved!.pinHash, saved!.pinSalt)).toBe(true)
-    expect(await verifyPin('4822', saved!.pinHash, saved!.pinSalt)).toBe(false)
+    expect(await verifyPin('4821', saved!)).toBe(true)
+    expect(await verifyPin('4822', saved!)).toBe(false)
   })
 
   it.each(['123', '12345', 'abcd', '12 4', ''])('refuses %j', async (pin) => {
