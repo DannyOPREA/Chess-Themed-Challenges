@@ -6,18 +6,15 @@
 
 This plan splits the build of [`scope.md`](scope.md) into 4 phases and 11 units. One unit is one PR. Each unit's detailed build plan is written in its own PR, at the path shown, from the template in [`README.md`](README.md); this file only fixes what each unit delivers, what it depends on, and the order.
 
-## Deadlines
-
-All times are UK times.
+## Key dates
 
 | When | What |
 |---|---|
-| Thursday 2026-10-08, 13:00 | Phases 1 to 3 merged (target) |
-| Thursday 2026-10-08, 16:00 | Whole-app check finished and its fixes merged (target) |
-| Thursday 2026-10-08, 17:00 | Merge freeze starts: from here, only merges Danny asks for (`CLAUDE.md`, working agreement) |
-| Thursday 2026-10-08, evening | Danny's test run with the `test` content |
+| Thursday 2026-10-08, 18:00 UK | Danny's test run with the `test` content |
 | After the test run, when Danny says | Switch to the `real` content and clear the game (unit 4.01) |
 | Saturday 2026-10-10 | The crawl |
+
+The build has no target times (Danny, 2026-10-07). Work runs non-stop until Danny says to stop: each unit starts as soon as the units it depends on are merged, and the whole-app check starts as soon as phases 1 to 3 are.
 
 ## Build order
 

@@ -96,7 +96,7 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 ## 2026-10-07: Phase-by-phase plan written
 
 **Done**
-- Wrote `docs/phases.md`: 4 phases and 11 units, each with what it delivers and what it depends on, the order in waves of parallel units, and the deadlines up to the Thursday test run.
+- Wrote `docs/phases.md`: 4 phases and 11 units, each with what it delivers and what it depends on, the order in waves of parallel units, and the key dates.
 
 **Worked**
 - Nothing to note yet.
@@ -111,6 +111,6 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 - The phase rules (what each phase allows) go in unit 1.02 with the schema rather than a unit of their own. Why: they are small and sit next to the stored phase; a separate unit would add a full review cycle for a few lines.
 - Accusations get their own screen and unit (3.03), separate from the player screen (3.02). Why: the two can then be built in parallel without editing the same file.
 - Deploy setup (1.03) comes in the second wave, though nothing depends on it. Why: Danny's Cloudflare steps (linking the repo, the production database, the secrets) can then be done early, and every later merge deploys, so deploy problems show up well before the Thursday test.
-- Target of phases 1 to 3 merged by 13:00 and the whole-app check done by 16:00 UK on Thursday 2026-10-08. Why: the merge freeze starts at 17:00, and after that only merges Danny asks for can go in.
+- The plan gives no target times, only the test run at 18:00 UK on Thursday 2026-10-08. Why: Danny asked for this, so that the coordinator doesn't time its work to a schedule and works non-stop until Danny says to stop. An earlier draft had targets of 13:00 and 16:00 on Thursday.
 - The whole-app check is not a unit. Why: the working agreement logs its fixes in the units they touch; the check itself is logged here.
 - The switch to the real content is planned now as unit 4.01, but built only when Danny says. Why: it clears all game data in production, and its timing depends on the Thursday test run.
