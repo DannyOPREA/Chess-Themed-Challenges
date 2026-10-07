@@ -37,3 +37,34 @@ Plan: [docs/phase-2-game-rules/01-scoring-and-detection.md](../../docs/phase-2-g
 - Accusations by or about a removed player, and self-accusations, are ignored rather than refused. Why: the host can remove a player mid-game, and the reveal must still work; a removed player isn't on the leaderboard, so a guess about them can't be right or wrong.
 - Two guesses by one player about the same player throw. Why: the database allows only one, so this would mean a bug elsewhere, and silently picking one could give a wrong score.
 - The breakdown gives each accusation's guess and the real challenge as numbers, not names. Why: the reveal looks names and descriptions up in the content set (unit 1.02), which this unit doesn't depend on.
+
+## 2026-10-07: Code review and unit review
+
+**Done**
+- Ran `/code-review` at `high` on the branch's diff against `main`. Ten findings, handled as follows:
+  1. A second guess by one player about the same player made `scoreGame` throw, so a double tap that slipped past the database would break the reveal for everyone. Fixed: the last guess passed in counts. This replaces the "throw" decision in the entry above. Also told the unit 1.02 thread that a unique (accuser, accused) index would guarantee one guess per pair.
+  2. A player listed twice (same id) was scored twice and pushed everyone below down a rank. Fixed: scored once.
+  3. Guesses outside 1 to 20 (for example a cleared guess mapped to 0) cost a point. Fixed: ignored.
+  4. `detect()` listed detectors in input order while `scoreGame` sorted them by name. Fixed: `detect()` sorts them by id.
+  5. Accusations were validated twice. Fixed: one pass (`judge()`).
+  6. Each player rescanned every accusation. Fixed: accusations are grouped by accuser in one pass.
+  7. Ranks used `findIndex` per player, relying on the sort above it. Fixed: one pass comparing with the previous total.
+  8. Name order used `sensitivity: 'base'`, which also ignores accents, while the plan says "ignoring capitals". Fixed: `sensitivity: 'accent'`.
+  9. Plan status still "In progress". Set to "Done" in this entry's commit.
+  10. No test with two players sharing a challenge (more than 20 players). Added.
+- Ran the `unit-reviewer` agent. Verdict "Fix needed", nothing blocking; it worked the five-player game and its own six-player game by hand and both matched. Findings:
+  - Should fix: no test with a shared challenge. Added (code review finding 10).
+  - Note: the tie test didn't prove names are ordered ignoring capitals. Added a test tying `alice` and `Bob`.
+  - Note: `detect()` had no test of its own for self-accusations and removed players. Added.
+  - Note: duplicate guesses throwing would break the reveal. Fixed (code review finding 1).
+  - Note: `ScoringPlayer` needs a challenge and decoy, so the reveal (3.05) decides what to do about anyone without an assignment. Left for 3.05.
+- Updated the plan's rules and tests to match. 26 tests in `test/scoring.test.ts`; typecheck and all tests pass.
+
+**Worked**
+- Both reviews agreed the scoring maths matched the scope; every finding was about awkward input.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Bad input is ignored or resolved rather than thrown. Why: the reveal runs once, on the night, for everyone; a wrong-looking guess costing nothing is better than a 500 page for 20 players.

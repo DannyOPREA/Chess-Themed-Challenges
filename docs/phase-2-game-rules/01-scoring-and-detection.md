@@ -1,6 +1,6 @@
 # Phase 2, unit 01: Scoring and detection
 
-- Status: In progress
+- Status: Done
 - Log: [logs/phase-2-game-rules/01-scoring-and-detection.md](../../logs/phase-2-game-rules/01-scoring-and-detection.md)
 - Depends on: 1.01
 
@@ -25,16 +25,18 @@ The game's end-of-night maths as pure functions: who was detected, each player's
 3. `scoreGame(players, accusations)`: the leaderboard, one `PlayerScore` per player, highest total first. Each entry carries the breakdown (`challenge`, `decoy`, `completed`, `detected`, `detectedBy` with names, `correctAccusations` and `wrongAccusations` with the accused player's name, the guess and their real challenge), the points (`challengePoints`, `accusationPoints`, `total`) and `rank`.
 4. Rules for data the scope doesn't cover:
    - Ranks use standard competition ranking: tied players share a rank and the next rank skips (1, 1, 3). Within a tie, and in every list in the breakdown, players are listed by name, ignoring capitals.
-   - Accusations by or about a player who isn't in the player list (removed by the host) are ignored, and so are self-accusations.
-   - Two guesses by one player about the same player throw an error, as there is no way to tell which is final. The database never stores two (unit 1.02).
+   - `detect()` lists each player's detectors by id, lowest first, so the order doesn't depend on the order rows come from the database.
+   - Ignored: accusations by or about a player who isn't in the player list (removed by the host), self-accusations, and guesses that aren't a challenge number from 1 to 20.
+   - If one player has more than one guess about the same player, the last one passed in counts. The database should never hold two (unit 1.02), but a reveal that fails for everyone would be worse than a guess picked by order.
+   - A player listed twice (same id) is scored once.
 
 ## Tests
 
 `test/scoring.test.ts`:
 
 - Every row of the scoring table: completed and not detected (+5), completed but detected (+1), not completed whether detected or not (0), each correct accusation (+2), each wrong accusation (−1, totals can go below zero), challenge and accusation points added together, and the decoy worth nothing (guessing someone's decoy is a wrong guess and doesn't detect them).
-- Detection by one player, by several (counted once), nobody detected, everyone detected, players with no accusations and a game with none, ignored self-accusations and accusations by or about removed players, and the duplicate-guess error.
-- Leaderboard order, ties sharing a rank with the next rank skipped, everyone tied, an empty game.
+- Detection by one player, by several (counted once), nobody detected, everyone detected, players with no accusations and a game with none, ignored self-accusations and accusations by or about removed players, the last of two guesses counting, guesses that aren't a challenge number, a fixed detector order, two players sharing a challenge (more than 20 players), and a player listed twice.
+- Leaderboard order, ties sharing a rank with the next rank skipped, tied players ordered by name ignoring capitals, everyone tied, an empty game.
 - A full game of five players worked out by hand in the test file's comment, with every score, rank and one full breakdown checked.
 
 ## Done when

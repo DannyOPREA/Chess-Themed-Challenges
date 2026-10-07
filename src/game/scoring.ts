@@ -13,7 +13,7 @@ export type ScoringPlayer = {
 }
 
 // A player's final guess about another player: "accused's challenge is
-// `challenge`". Each player has at most one per other player.
+// `challenge`". A cleared guess is simply left out.
 export type ScoringAccusation = {
   accuserId: number
   accusedId: number
@@ -28,6 +28,8 @@ export const POINTS = {
   correctAccusation: 2,
   wrongAccusation: -1,
 } as const
+
+const CHALLENGE_COUNT = 20
 
 // One accusation in a player's breakdown, named for the reveal.
 export type AccusationResult = {
@@ -60,41 +62,51 @@ export type PlayerScore = {
   rank: number
 }
 
+// By name ignoring capitals (names are unique that way), then by id.
+const compareNames = (a: string, b: string) => a.localeCompare(b, 'en', { sensitivity: 'accent' })
 const byName = (a: { id: number; name: string }, b: { id: number; name: string }) =>
-  a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }) || a.id - b.id
+  compareNames(a.name, b.name) || a.id - b.id
+const byAccusedName = (a: AccusationResult, b: AccusationResult) =>
+  compareNames(a.accusedName, b.accusedName) || a.accusedId - b.accusedId
 
-// Keeps the accusations that count: both players still in the game, and not
-// about oneself. Accusations by or about a removed player are ignored. Throws if
-// a player has more than one guess about the same player, which the database
-// never allows, because there is no way to tell which one is final.
-function validAccusations(players: Map<number, ScoringPlayer>, accusations: ScoringAccusation[]) {
-  const seen = new Set<string>()
-  return accusations.filter((a) => {
-    if (!players.has(a.accuserId) || !players.has(a.accusedId) || a.accuserId === a.accusedId) {
-      return false
-    }
-    const key = `${a.accuserId}:${a.accusedId}`
-    if (seen.has(key)) {
-      throw new Error(`Player ${a.accuserId} has more than one accusation about player ${a.accusedId}`)
-    }
-    seen.add(key)
-    return true
-  })
+type Judged = ScoringAccusation & { accused: ScoringPlayer; correct: boolean }
+
+// Players by id, keeping the first if an id appears twice.
+function playersById(players: ScoringPlayer[]) {
+  const byId = new Map<number, ScoringPlayer>()
+  for (const p of players) if (!byId.has(p.id)) byId.set(p.id, p)
+  return byId
 }
 
-// For each player id, the ids of the other players whose final guess about
-// them is correct. A player is detected when this list is not empty.
+// The accusations that count, each marked right or wrong. Ignored: guesses by
+// or about a player who isn't in the list (removed by the host), guesses about
+// oneself, and guesses that aren't a challenge number. If a player has more
+// than one guess about the same player, the last one in the list counts.
+function judge(byId: Map<number, ScoringPlayer>, accusations: ScoringAccusation[]): Judged[] {
+  const final = new Map<string, Judged>()
+  for (const a of accusations) {
+    const accused = byId.get(a.accusedId)
+    if (!accused || !byId.has(a.accuserId) || a.accuserId === a.accusedId) continue
+    if (!Number.isInteger(a.challenge) || a.challenge < 1 || a.challenge > CHALLENGE_COUNT) continue
+    const key = `${a.accuserId}:${a.accusedId}`
+    final.delete(key)
+    final.set(key, { ...a, accused, correct: a.challenge === accused.challenge })
+  }
+  return [...final.values()]
+}
+
+// For each player id, the ids (lowest first) of the other players whose final
+// guess about them is correct. A player is detected when this list isn't empty.
 export function detect(
   players: ScoringPlayer[],
   accusations: ScoringAccusation[],
 ): Map<number, number[]> {
-  const byId = new Map(players.map((p) => [p.id, p]))
-  const detectedBy = new Map<number, number[]>(players.map((p) => [p.id, []]))
-  for (const a of validAccusations(byId, accusations)) {
-    if (byId.get(a.accusedId)!.challenge === a.challenge) {
-      detectedBy.get(a.accusedId)!.push(a.accuserId)
-    }
+  const byId = playersById(players)
+  const detectedBy = new Map<number, number[]>([...byId.keys()].map((id) => [id, []]))
+  for (const a of judge(byId, accusations)) {
+    if (a.correct) detectedBy.get(a.accusedId)!.push(a.accuserId)
   }
+  for (const ids of detectedBy.values()) ids.sort((x, y) => x - y)
   return detectedBy
 }
 
@@ -104,44 +116,40 @@ export function scoreGame(
   players: ScoringPlayer[],
   accusations: ScoringAccusation[],
 ): PlayerScore[] {
-  const byId = new Map(players.map((p) => [p.id, p]))
-  const valid = validAccusations(byId, accusations)
-  const detectedBy = detect(players, valid)
-
-  const scores = players.map((player): Omit<PlayerScore, 'rank'> => {
-    const detectors = detectedBy
-      .get(player.id)!
-      .map((id) => ({ id, name: byId.get(id)!.name }))
-      .sort(byName)
-    const detected = detectors.length > 0
-
-    const correctAccusations: AccusationResult[] = []
-    const wrongAccusations: AccusationResult[] = []
-    for (const a of valid) {
-      if (a.accuserId !== player.id) continue
-      const accused = byId.get(a.accusedId)!
-      const result = {
-        accusedId: accused.id,
-        accusedName: accused.name,
-        guessed: a.challenge,
-        actual: accused.challenge,
-      }
-      ;(a.challenge === accused.challenge ? correctAccusations : wrongAccusations).push(result)
+  const byId = playersById(players)
+  const detectors = new Map<number, { id: number; name: string }[]>()
+  const made = new Map<number, { correct: AccusationResult[]; wrong: AccusationResult[] }>()
+  for (const id of byId.keys()) {
+    detectors.set(id, [])
+    made.set(id, { correct: [], wrong: [] })
+  }
+  for (const a of judge(byId, accusations)) {
+    const result = {
+      accusedId: a.accused.id,
+      accusedName: a.accused.name,
+      guessed: a.challenge,
+      actual: a.accused.challenge,
     }
-    const byAccusedName = (x: AccusationResult, y: AccusationResult) =>
-      byName({ id: x.accusedId, name: x.accusedName }, { id: y.accusedId, name: y.accusedName })
-    correctAccusations.sort(byAccusedName)
-    wrongAccusations.sort(byAccusedName)
+    const own = made.get(a.accuserId)!
+    if (a.correct) {
+      own.correct.push(result)
+      detectors.get(a.accusedId)!.push({ id: a.accuserId, name: byId.get(a.accuserId)!.name })
+    } else {
+      own.wrong.push(result)
+    }
+  }
 
+  const scores = [...byId.values()].map((player): Omit<PlayerScore, 'rank'> => {
+    const detectedBy = detectors.get(player.id)!.sort(byName)
+    const { correct, wrong } = made.get(player.id)!
+    const detected = detectedBy.length > 0
     const challengePoints = !player.completed
       ? POINTS.notCompleted
       : detected
         ? POINTS.completedDetected
         : POINTS.completedUndetected
     const accusationPoints =
-      correctAccusations.length * POINTS.correctAccusation +
-      wrongAccusations.length * POINTS.wrongAccusation
-
+      correct.length * POINTS.correctAccusation + wrong.length * POINTS.wrongAccusation
     return {
       id: player.id,
       name: player.name,
@@ -149,21 +157,21 @@ export function scoreGame(
       decoy: player.decoy,
       completed: player.completed,
       detected,
-      detectedBy: detectors,
-      correctAccusations,
-      wrongAccusations,
+      detectedBy,
+      correctAccusations: correct.sort(byAccusedName),
+      wrongAccusations: wrong.sort(byAccusedName),
       challengePoints,
       accusationPoints,
       total: challengePoints + accusationPoints,
     }
   })
 
+  // Standard competition ranking: a player's rank is one more than the number
+  // of players with a strictly higher total.
   scores.sort((a, b) => b.total - a.total || byName(a, b))
-  // Standard competition ranking: one more than the number of players with a
-  // strictly higher total, which in this order is the first index with the
-  // same total.
-  return scores.map((score) => ({
-    ...score,
-    rank: scores.findIndex((s) => s.total === score.total) + 1,
-  }))
+  let rank = 0
+  return scores.map((score, i) => {
+    if (i === 0 || score.total !== scores[i - 1]!.total) rank = i + 1
+    return { ...score, rank }
+  })
 }

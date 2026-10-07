@@ -101,8 +101,7 @@ describe('detection', () => {
     const accusations = [guess(2, 1, 1), guess(3, 1, 1), guess(4, 1, 1)]
     expect(detect(players, accusations).get(1)).toEqual([2, 3, 4])
     const s = scoreOf(scoreGame(players, accusations), 1)
-    expect(s.detectedBy.map((d) => d.name)).toEqual(['Bob', 'Cara', 'Dev'])
-    expect(s.challengePoints).toBe(1)
+    expect(s).toMatchObject({ detected: true, challengePoints: 1, total: 1 })
   })
 
   it('detects nobody when every guess is wrong', () => {
@@ -140,12 +139,56 @@ describe('detection', () => {
     expect(scoreOf(scores, 1)).toMatchObject({ detected: false, total: 5 })
     expect(scoreOf(scores, 2)).toMatchObject({ detected: false, total: 5 })
     expect(scoreOf(scores, 3)).toMatchObject({ wrongAccusations: [], total: 5 })
+    expect([...detect(players, accusations).values()]).toEqual([[], [], [], []])
   })
 
-  it('refuses two guesses by one player about the same player', () => {
-    expect(() => scoreGame(players, [guess(1, 2, 2), guess(1, 2, 3)])).toThrow(
-      'more than one accusation',
-    )
+  it('counts only the last of two guesses by one player about the same player', () => {
+    const scores = scoreGame(players, [guess(1, 2, 2), guess(1, 2, 3)])
+    expect(scoreOf(scores, 1)).toMatchObject({ correctAccusations: [], accusationPoints: -1 })
+    expect(scoreOf(scores, 1).wrongAccusations).toHaveLength(1)
+    expect(scoreOf(scores, 2)).toMatchObject({ detected: false })
+    expect(detect(players, [guess(1, 2, 3), guess(1, 2, 2)]).get(2)).toEqual([1])
+  })
+
+  it('ignores guesses that are not a challenge number', () => {
+    const accusations = [guess(1, 2, 0), guess(1, 3, 21), guess(1, 4, Number.NaN), guess(2, 3, 2.5)]
+    const scores = scoreGame(players, accusations)
+    expect(scoreOf(scores, 1)).toMatchObject({ wrongAccusations: [], total: 5 })
+    expect(scoreOf(scores, 2)).toMatchObject({ wrongAccusations: [], total: 5 })
+  })
+
+  it('lists detectors in a fixed order, whatever order the guesses come in', () => {
+    const accusations = [guess(4, 1, 1), guess(2, 1, 1), guess(3, 1, 1)]
+    expect(detect(players, accusations).get(1)).toEqual([2, 3, 4])
+    expect(scoreOf(scoreGame(players, accusations), 1).detectedBy.map((d) => d.name)).toEqual([
+      'Bob',
+      'Cara',
+      'Dev',
+    ])
+  })
+
+  it('judges each player on their own challenge when challenges are shared (over 20 players)', () => {
+    // Alice and Bob both have challenge 3. A right guess about Alice doesn't detect Bob.
+    const shared = [
+      player(1, 'Alice', true, 3),
+      player(2, 'Bob', true, 3),
+      player(3, 'Cara', false, 7),
+    ]
+    const scores = scoreGame(shared, [guess(3, 1, 3), guess(1, 2, 3)])
+    expect(scoreOf(scores, 1)).toMatchObject({ detected: true, challengePoints: 1, total: 3 })
+    expect(scoreOf(scores, 2)).toMatchObject({ detected: true, detectedBy: [{ id: 1, name: 'Alice' }] })
+    expect(scoreGame(shared, [guess(3, 1, 3)]).find((s) => s.id === 2)).toMatchObject({
+      detected: false,
+      total: 5,
+    })
+  })
+
+  it('scores a player listed twice only once', () => {
+    const scores = scoreGame([player(1, 'Alice', true), player(1, 'Alice', true), player(2, 'Bob', false)], [])
+    expect(scores.map((s) => [s.name, s.rank])).toEqual([
+      ['Alice', 1],
+      ['Bob', 2],
+    ])
   })
 })
 
@@ -177,6 +220,11 @@ describe('the leaderboard', () => {
       ['Bob', 0, 4],
       ['alice', -1, 5],
     ])
+  })
+
+  it('orders tied players by name ignoring capitals', () => {
+    const scores = scoreGame([player(1, 'Bob', false), player(2, 'alice', false)], [])
+    expect(scores.map((s) => s.name)).toEqual(['alice', 'Bob'])
   })
 
   it('shares rank 1 when everyone ties', () => {
