@@ -94,3 +94,21 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 - Pass the token as a build secret rather than committing a `database_id` and dropping D1 from the build. Why: migrations must run against the live database, and that needs D1 Edit whatever the config says; a build secret is a documented Workers Builds feature, and Danny already had the token.
 - A separate name, `DEPLOY_API_TOKEN`, rather than overriding `CLOUDFLARE_API_TOKEN` directly in the build settings. Why: the docs say only the listed default variables can be overridden and don't say whether a build variable beats the injected build token, while a variable of our own name is read by our script for certain.
 - Use the new token for `wrangler deploy` too, not only for migrations. Why: with no `database_id`, `wrangler deploy` looks the database up by name, which also needs D1; with no D1 access it skips the lookup and the first deploy, onto the Hello World Worker that has no D1 binding yet, would fail.
+
+## 2026-10-07: Review of the deploy token change
+
+**Done**
+- Ran `/code-review` at `high` on the change. Fixed the findings below. `npm run deploy` now stops at once with a message naming `DEPLOY_API_TOKEN` if the secret isn't set, instead of falling back to Workers Builds' own token as the entry above describes.
+
+**Worked**
+- Checked in `sh` that the script stops with the message and exit code 1 when the secret is empty or unset, and goes on to Wrangler with the secret's value when it is set.
+
+**Didn't work**
+- The fallback to Workers Builds' own token, built in the entry above, could only ever fail on D1, with an error that doesn't mention the secret. Replaced.
+
+**Decisions**
+- Fail fast without `DEPLOY_API_TOKEN`. Why: the fallback token can't use D1, so the fallback only turned a clear error into a confusing one (code review).
+- README step 5 says to update `DEPLOY_API_TOKEN` after rolling or replacing the token, and step 6 says a fresh build after the next merge picks up the secret if a retried one doesn't. Why: both were gaps the code review found; one sentence each.
+- README now matches the plan on what happens without the secret. Why: the code review found them disagreeing.
+- Kept the "Edit Cloudflare Workers" template with All zones, rather than asking Danny for a narrower custom token. Why: the account has no zones (the app uses workers.dev only), so the zone permissions grant nothing in practice, and Danny already made this token; the code review's point about scope is noted here for the final review.
+- Not made Windows-safe (the code review noted `cmd.exe` doesn't understand the script). Why: only Workers Builds, on Linux, runs it; sessions never deploy and nobody deploys by hand (`CLAUDE.md` rule 7).

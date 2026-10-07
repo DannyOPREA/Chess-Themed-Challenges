@@ -16,7 +16,7 @@ Everything Cloudflare Workers Builds needs to build the app, apply D1 migrations
 
 ## Work
 
-1. `npm run deploy`: `wrangler d1 migrations apply DB --remote && wrangler deploy`, both with the API token from the build secret `DEPLOY_API_TOKEN` when it is set (it falls back to the token Workers Builds provides). Workers Builds runs it as its deploy command, so migrations reach the production database before the code that needs them. Wrangler answers its own "apply migrations?" prompt with yes in CI, and stops before deploying if a migration fails.
+1. `npm run deploy`: `wrangler d1 migrations apply DB --remote && wrangler deploy`, both with the API token from the build secret `DEPLOY_API_TOKEN`. If that secret isn't set, the script stops with a message naming it, rather than failing later on D1 permissions. Workers Builds runs it as its deploy command, so migrations reach the production database before the code that needs them. Wrangler answers its own "apply migrations?" prompt with yes in CI, and stops before deploying if a migration fails.
 2. `wrangler.jsonc`:
    - no `database_id` for `DB`: Wrangler finds the production database by its name, `chess-crawl`, both when applying migrations and when deploying.
    - `workers_dev: true` and `preview_urls: false`: the app lives at its `workers.dev` address, and old versions don't get URLs of their own that would run old code against the current database.
