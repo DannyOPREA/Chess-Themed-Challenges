@@ -232,17 +232,23 @@ describe('the accusations screen', () => {
   it('saves, changes and clears a guess with a plain form post', async () => {
     const [ann, bob] = [await addPlayer('Ann'), await addPlayer('Bob')]
     await setPhase('game_on')
+    // Back to the same row, which says what was saved.
+    const rowUrl = `/accuse?saved=${bob.id}#player-${bob.id}`
     let res = await post(ann, { accused: String(bob.id), challenge: '7' })
     expect(res.status).toBe(303)
-    expect(res.headers.get('Location')).toBe('/accuse?done=saved')
+    expect(res.headers.get('Location')).toBe(rowUrl)
     expect(await guessOf(ann, bob)).toBe(7)
+    expect(await (await get(`/accuse?saved=${bob.id}`, ann)).text()).toContain(
+      `<small id="status-${bob.id}" role="status">Saved: Challenge 7.</small>`,
+    )
     res = await post(ann, { accused: String(bob.id), challenge: '8' })
     expect(await guessOf(ann, bob)).toBe(8)
     res = await post(ann, { accused: String(bob.id), challenge: '' })
-    expect(res.headers.get('Location')).toBe('/accuse?done=cleared')
+    expect(res.headers.get('Location')).toBe(rowUrl)
     expect(await guessOf(ann, bob)).toBeUndefined()
-    const html = await (await get('/accuse?done=cleared', ann)).text()
-    expect(html).toContain('Guess cleared.')
+    expect(await (await get(`/accuse?saved=${bob.id}`, ann)).text()).toContain(
+      `<small id="status-${bob.id}" role="status">Guess cleared.</small>`,
+    )
   })
 
   it('saves a guess with htmx and returns the row status and the new count', async () => {
@@ -251,6 +257,12 @@ describe('the accusations screen', () => {
     const page = await (await get('/accuse', ann)).text()
     expect(page).toContain(`hx-target="#status-${bob.id}"`)
     expect(page).toContain(`<small id="status-${bob.id}" role="status"></small>`)
+    // The row says when a save is being sent, and when it never arrived.
+    expect(page).toContain(
+      `hx-on::before-request="this.querySelector(&#39;[role=status]&#39;).textContent = &quot;Saving…&quot;"`,
+    )
+    expect(page).toMatch(/hx-on::send-error="[^"]*Not saved/)
+    expect(page).toMatch(/hx-on::response-error="[^"]*Not saved/)
     expect(page).toContain('<p id="guess-count">You have a guess for 0 of 2 players.</p>')
 
     const res = await post(ann, { accused: String(bob.id), challenge: '7' }, htmx)
@@ -350,6 +362,22 @@ describe('the 10-second poll', () => {
     expect(res.headers.get('HX-Redirect')).toBe('/accuse')
   })
 
+  it('reloads the page when a player is removed', async () => {
+    const [ann, bob] = [await addPlayer('Ann'), await addPlayer('Bob'), await addPlayer('Cat')]
+    await setPhase('game_on')
+    const url = pollUrl(await (await get('/accuse', ann)).text())
+    await db.delete(players).where(eq(players.id, bob.id))
+    expect((await get(url, ann, htmx)).headers.get('HX-Redirect')).toBe('/accuse')
+  })
+
+  it('skips a tick while a save is being sent', async () => {
+    const ann = await addPlayer('Ann')
+    await setPhase('game_on')
+    expect(await (await get('/accuse', ann)).text()).toContain(
+      `hx-trigger="every 10s [!document.querySelector(&#39;.htmx-request&#39;)]"`,
+    )
+  })
+
   it('reloads the page when accusations close', async () => {
     const [ann] = [await addPlayer('Ann'), await addPlayer('Bob')]
     await setPhase('game_on')
@@ -367,6 +395,6 @@ describe('the 10-second poll', () => {
     await setPhase('game_on')
     expect((await get(url, ann, htmx)).headers.get('HX-Redirect')).toBe('/accuse')
     await setPhase('reveal')
-    expect(await (await get('/accuse', ann)).text()).not.toContain('hx-trigger="every 10s"')
+    expect(await (await get('/accuse', ann)).text()).not.toContain('every 10s')
   })
 })

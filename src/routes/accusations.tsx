@@ -18,11 +18,10 @@ export const accusations = new Hono<PlayerEnv>()
 // `/accuse/*` also matches `/accuse` itself.
 accusations.use('/accuse/*', requirePlayer)
 
-// Short messages after an action, passed back in the URL as `?done=<key>`
-// (for phones without JavaScript, and when an htmx save is refused).
+// Short messages after a refused save, passed back in the URL as
+// `?done=<key>`. A save that worked without JavaScript is shown on its row
+// instead (`?saved=<player id>`).
 const NOTICES = {
-  saved: 'Guess saved.',
-  cleared: 'Guess cleared.',
   closed: "Accusations are closed, so that guess wasn't changed.",
   gone: 'That player has left the game.',
 } as const
@@ -58,7 +57,28 @@ const savedText = (content: Content, guess: number | null) =>
 // stays as the player left it and a quick second pick is sent after the first
 // (htmx queues it on the same form). Without JavaScript, the Save button posts
 // the form and the page reloads.
-const GuessForm = ({ target, content }: { target: Target; content: Content }) => (
+//
+// While a save is being sent the status line says so, and if it never arrives
+// (no signal, a server error) it says it wasn't saved, so a stale "Saved:"
+// line never sits under a different pick.
+const statusScript = (text: string) =>
+  `this.querySelector('[role=status]').textContent = ${JSON.stringify(text)}`
+const NOT_SAVED = 'Not saved. Check your signal and pick again.'
+const statusHandlers = {
+  'hx-on::before-request': statusScript('Saving…'),
+  'hx-on::send-error': statusScript(NOT_SAVED),
+  'hx-on::response-error': statusScript(NOT_SAVED),
+}
+
+const GuessForm = ({
+  target,
+  content,
+  saved,
+}: {
+  target: Target
+  content: Content
+  saved?: boolean
+}) => (
   <form
     id={`player-${target.id}`}
     method="post"
@@ -67,6 +87,7 @@ const GuessForm = ({ target, content }: { target: Target; content: Content }) =>
     hx-trigger="change, submit"
     hx-target={`#status-${target.id}`}
     hx-swap="innerHTML"
+    {...statusHandlers}
   >
     <input type="hidden" name="accused" value={String(target.id)} />
     <label for={`guess-${target.id}`}>
@@ -80,7 +101,9 @@ const GuessForm = ({ target, content }: { target: Target; content: Content }) =>
         Save
       </button>
     </fieldset>
-    <small id={`status-${target.id}`} role="status"></small>
+    <small id={`status-${target.id}`} role="status">
+      {saved ? savedText(content, target.guess) : null}
+    </small>
   </form>
 )
 
@@ -127,6 +150,7 @@ accusations.get('/accuse', async (c) => {
   const { phase, targets } = await load(c)
   const content = loadContent(c.env.CONTENT_SET)
   const open = phaseAllows(phase, 'accuse')
+  const savedRow = Number(c.req.query('saved'))
   return c.render(
     <>
       <hgroup>
@@ -140,7 +164,9 @@ accusations.get('/accuse', async (c) => {
         <section>
           <GuessCount targets={targets} />
           {open ? (
-            targets.map((t) => <GuessForm target={t} content={content} />)
+            targets.map((t) => (
+              <GuessForm target={t} content={content} saved={t.id === savedRow} />
+            ))
           ) : (
             <ul>
               {targets.map((t) => (
@@ -157,9 +183,11 @@ accusations.get('/accuse', async (c) => {
         // Reloads the screen when the phase or the players change (the host
         // opening or closing accusations, a late joiner, a removed player);
         // otherwise the poll gets an empty 204 and does nothing.
+        // It skips a tick while a save is being sent, so a reload can't cut
+        // the save off.
         <div
           hx-get={`/accuse/poll?v=${await fingerprint(phase, targets)}`}
-          hx-trigger="every 10s"
+          hx-trigger="every 10s [!document.querySelector('.htmx-request')]"
           hx-swap="none"
         />
       )}
@@ -209,7 +237,8 @@ accusations.post(
     const result = await setGuess(db, c.var.player.id, accused, challenge)
     if (result === 'self') return backToScreen(c)
     if (result !== 'saved') return backToScreen(c, result)
-    if (!c.req.header('HX-Request')) return backToScreen(c, challenge === null ? 'cleared' : 'saved')
+    // Without JavaScript: back to the same row, which says what was saved.
+    if (!c.req.header('HX-Request')) return c.redirect(`/accuse?saved=${accused}#player-${accused}`, 303)
     // The row's status line, and the count above the list, updated out of band.
     const targets = await listTargets(db, c.var.player.id)
     return c.html(
