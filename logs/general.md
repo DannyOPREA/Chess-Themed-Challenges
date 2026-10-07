@@ -92,3 +92,25 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 - Merges wait for Danny while the app is in live use (from 17:00 UK on Thursday 2026-10-08 and on Saturday 2026-10-10, until Danny says it's over). Why: every merge to `main` redeploys the live app, so a merge mid-game could break the night. The 17:00 start is Claude's default; Danny can change it.
 - Switching to the real content stays Danny's call. Why: it clears all game data in production and its timing depends on the Thursday test run.
 - A whole-app check thread runs after the last unit, before Danny's review. Why: unit reviews can miss problems that only show in a full game.
+
+## 2026-10-07: Phase-by-phase plan written
+
+**Done**
+- Wrote `docs/phases.md`: 4 phases and 11 units, each with what it delivers and what it depends on, the order in waves of parallel units, and the deadlines up to the Thursday test run.
+
+**Worked**
+- Nothing to note yet.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Danny approves this plan before any unit starts. Why: Danny asked to approve it ("After I approve it, you will take it from there"), which overrides the working agreement's line that Danny no longer approves `docs/phases.md`. Later changes to the plan follow the working agreement.
+- Unit plans are written in each unit's own PR, not in this one. Why: `docs/README.md` says each unit's plan is written and built in the same PR, and the unit thread knows the code it builds on.
+- The game rules (scoring, detection, assignment) are pure functions in their own phase, built in parallel with the database. Why: they are what `CLAUDE.md` rule 3 says must be tested, they need no screens or database, and running them in parallel saves time before Thursday.
+- The phase rules (what each phase allows) go in unit 1.02 with the schema rather than a unit of their own. Why: they are small and sit next to the stored phase; a separate unit would add a full review cycle for a few lines.
+- Accusations get their own screen and unit (3.03), separate from the player screen (3.02). Why: the two can then be built in parallel without editing the same file.
+- Deploy setup (1.03) comes in the second wave, though nothing depends on it. Why: Danny's Cloudflare steps (linking the repo, the production database, the secrets) can then be done early, and every later merge deploys, so deploy problems show up well before the Thursday test.
+- Target of phases 1 to 3 merged by 13:00 and the whole-app check done by 16:00 UK on Thursday 2026-10-08. Why: the merge freeze starts at 17:00, and after that only merges Danny asks for can go in.
+- The whole-app check is not a unit. Why: the working agreement logs its fixes in the units they touch; the check itself is logged here.
+- The switch to the real content is planned now as unit 4.01, but built only when Danny says. Why: it clears all game data in production, and its timing depends on the Thursday test run.
