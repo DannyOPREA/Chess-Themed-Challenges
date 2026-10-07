@@ -1,14 +1,14 @@
-import { eq } from 'drizzle-orm'
 import type { ScoringAccusation, ScoringPlayer } from '../game/scoring'
 import type { Db } from './client'
-import { accusations, game, players } from './schema'
+import { accusations, players } from './schema'
 
-// Everything the reveal (unit 3.05) scores: the phase, every player and every
-// final guess, read in one D1 batch so they come from the same moment. Callers
-// must check the phase before sending any of it to a phone.
-export const loadReveal = async (db: Db) => {
-  const [phaseRows, playerRows, accusationRows] = await db.batch([
-    db.select({ phase: game.phase }).from(game).where(eq(game.id, 1)),
+// Everything the reveal (unit 3.05) scores: every player and every final
+// guess, read in one D1 batch so they come from the same moment. Only for the
+// Reveal phase: check the phase first, as this reads everyone's challenge.
+export const loadFinalGame = async (
+  db: Db,
+): Promise<{ players: ScoringPlayer[]; accusations: ScoringAccusation[] }> => {
+  const [playerRows, accusationRows] = await db.batch([
     db
       .select({
         id: players.id,
@@ -26,11 +26,5 @@ export const loadReveal = async (db: Db) => {
       })
       .from(accusations),
   ])
-  const phase = phaseRows[0]?.phase
-  if (!phase) throw new Error('The game row is missing; apply the migrations')
-  return {
-    phase,
-    players: playerRows satisfies ScoringPlayer[],
-    accusations: accusationRows satisfies ScoringAccusation[],
-  }
+  return { players: playerRows, accusations: accusationRows }
 }

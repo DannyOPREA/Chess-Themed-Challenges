@@ -1,38 +1,53 @@
+import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
+import { z } from 'zod'
 import { type PlayerEnv, requirePlayer } from '../auth/session'
 import { type Content, getChallenge, getDecoy, loadContent } from '../content'
 import { createDb } from '../db/client'
-import { loadReveal } from '../db/reveal'
+import { getPhase } from '../db/game'
+import { loadFinalGame } from '../db/reveal'
 import { phaseAllows } from '../game/phases'
 import { type AccusationResult, type PlayerScore, POINTS, scoreGame } from '../game/scoring'
 
 // The reveal (docs/scope.md, "Reveal"): the final leaderboard and every
 // player's breakdown, with full challenge descriptions. Only in the Reveal
-// phase; before then it sends the phone back to the player screen and sends
+// phase; before then it sends the phone back to the player screen and reads
 // nothing about anyone. It doesn't poll: the Reveal is the last phase, and
 // completions are final by then.
 export const reveal = new Hono<PlayerEnv>()
 
 reveal.use('/reveal', requirePlayer)
 
-const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')
-
-const points = (n: number) => `${n} ${Math.abs(n) === 1 ? 'point' : 'points'}`
+// With a typographic minus, so negative numbers read the same everywhere.
+const number = (n: number) => (n < 0 ? `−${-n}` : `${n}`)
+const signed = (n: number) => (n > 0 ? `+${n}` : number(n))
+const points = (n: number) => `${number(n)} ${Math.abs(n) === 1 ? 'point' : 'points'}`
 
 // `=1` for a rank shared with someone else.
-const rankLabel = (score: PlayerScore, all: PlayerScore[]) =>
-  all.some((s) => s !== score && s.rank === score.rank) ? `=${score.rank}` : `${score.rank}`
+const rankLabeller = (scores: PlayerScore[]) => {
+  const counts = new Map<number, number>()
+  for (const s of scores) counts.set(s.rank, (counts.get(s.rank) ?? 0) + 1)
+  return (s: PlayerScore) => (counts.get(s.rank)! > 1 ? `=${s.rank}` : `${s.rank}`)
+}
 
+// Why a player got their challenge points, worked out from the points
+// themselves so it can't disagree with them.
 const challengeReason = (s: PlayerScore) =>
   s.challenge === null
     ? 'never got a challenge'
-    : !s.completed
-      ? 'not completed'
-      : s.detected
+    : s.challengePoints === POINTS.completedUndetected
+      ? 'completed and not detected'
+      : s.challengePoints === POINTS.completedDetected
         ? 'completed but detected'
-        : 'completed and not detected'
+        : 'not completed'
 
-const Leaderboard = ({ scores, you }: { scores: PlayerScore[]; you: number }) => (
+// The link to a player's breakdown reloads the page with it open, because
+// following a link to a closed <details> doesn't open it.
+const breakdownLink = (id: number) => `/reveal?show=${id}#player-${id}`
+
+type Labels = (s: PlayerScore) => string
+
+const Leaderboard = ({ scores, you, rank }: { scores: PlayerScore[]; you: number; rank: Labels }) => (
   <section>
     <h2>Leaderboard</h2>
     <div class="overflow-auto">
@@ -46,20 +61,12 @@ const Leaderboard = ({ scores, you }: { scores: PlayerScore[]; you: number }) =>
         </thead>
         <tbody>
           {scores.map((s) => {
-            const name = <a href={`#player-${s.id}`}>{s.name}</a>
+            const name = <a href={breakdownLink(s.id)}>{s.name}</a>
             return (
               <tr aria-current={s.id === you ? 'true' : undefined}>
-                <td>{rankLabel(s, scores)}</td>
-                <td>
-                  {s.id === you ? (
-                    <strong>
-                      {name} (you)
-                    </strong>
-                  ) : (
-                    name
-                  )}
-                </td>
-                <td>{s.id === you ? <strong>{s.total}</strong> : s.total}</td>
+                <td>{rank(s)}</td>
+                <td>{s.id === you ? <strong>{name} (you)</strong> : name}</td>
+                <td>{s.id === you ? <strong>{number(s.total)}</strong> : number(s.total)}</td>
               </tr>
             )
           })}
@@ -85,35 +92,31 @@ const Accusations = ({
   list,
   each,
   content,
-  correct,
 }: {
   title: string
   list: AccusationResult[]
   each: number
   content: Content
-  correct: boolean
 }) => (
   <>
-    <h4>
-      {title} ({signed(list.length * each)})
-    </h4>
-    {list.length === 0 ? (
-      <p>None.</p>
-    ) : (
+    <p>
+      <strong>
+        {title} ({signed(list.length * each)}):
+      </strong>
+      {list.length === 0 ? ' none' : null}
+    </p>
+    {list.length > 0 && (
       <ul>
-        {list.map((a) => (
-          <li>
-            {a.accusedName}:{' '}
-            {correct ? (
-              getChallenge(content, a.guessed).name
-            ) : (
-              <>
-                guessed {getChallenge(content, a.guessed).name}, it was {getChallenge(content, a.actual).name}
-              </>
-            )}{' '}
-            ({signed(each)})
-          </li>
-        ))}
+        {list.map((a) => {
+          const guessed = getChallenge(content, a.guessed).name
+          const what =
+            a.guessed === a.actual ? guessed : `guessed ${guessed}, it was ${getChallenge(content, a.actual).name}`
+          return (
+            <li>
+              {a.accusedName}: {what} ({signed(each)})
+            </li>
+          )
+        })}
       </ul>
     )}
   </>
@@ -121,105 +124,110 @@ const Accusations = ({
 
 const Breakdown = ({
   score: s,
-  all,
   you,
+  open,
+  rank,
   content,
 }: {
   score: PlayerScore
-  all: PlayerScore[]
   you: number
+  open: boolean
+  rank: Labels
   content: Content
 }) => {
   const challenge = s.challenge === null ? undefined : getChallenge(content, s.challenge)
   const decoy = s.decoy === null ? undefined : getDecoy(content, s.decoy)
   return (
-    <details id={`player-${s.id}`} open={s.id === you}>
-      <summary>
-        {rankLabel(s, all)}. {s.name}
-        {s.id === you ? ' (you)' : ''}: {points(s.total)}
-      </summary>
-      <h3>Challenge</h3>
-      {challenge ? (
+    <article id={`player-${s.id}`}>
+      <details open={open} style="margin-bottom: 0">
+        <summary>
+          {rank(s)}. {s.name}
+          {s.id === you ? ' (you)' : ''}: {points(s.total)}
+        </summary>
+        {challenge ? (
+          <p>
+            <strong>Challenge: {challenge.name}</strong>
+            <br />
+            {challenge.description}
+          </p>
+        ) : (
+          <p>Never got a challenge.</p>
+        )}
+        {decoy ? (
+          <p>
+            <strong>Decoy: {decoy.name}</strong>
+            <br />
+            {decoy.description}
+          </p>
+        ) : (
+          <p>Never got a decoy.</p>
+        )}
+        {challenge && (
+          <ul>
+            <li>Completed: {s.completed ? 'Yes' : 'No'}</li>
+            <li>Detected by: {s.detectedBy.length === 0 ? 'Nobody' : s.detectedBy.map((d) => d.name).join(', ')}</li>
+          </ul>
+        )}
         <p>
-          <strong>{challenge.name}</strong>
-          <br />
-          {challenge.description}
+          <strong>Challenge points ({signed(s.challengePoints)}):</strong> {challengeReason(s)}
         </p>
-      ) : (
-        <p>Never got a challenge.</p>
-      )}
-      <h3>Decoy</h3>
-      {decoy ? (
-        <p>
-          <strong>{decoy.name}</strong>
-          <br />
-          {decoy.description}
+        <Accusations
+          title="Right accusations"
+          list={s.correctAccusations}
+          each={POINTS.correctAccusation}
+          content={content}
+        />
+        <Accusations
+          title="Wrong accusations"
+          list={s.wrongAccusations}
+          each={POINTS.wrongAccusation}
+          content={content}
+        />
+        <p style="margin-bottom: 0">
+          <strong>Total: {points(s.total)}</strong>
         </p>
-      ) : (
-        <p>Never got a decoy.</p>
-      )}
-      {challenge && (
-        <ul>
-          <li>Completed: {s.completed ? 'Yes' : 'No'}</li>
-          <li>Detected by: {s.detectedBy.length === 0 ? 'Nobody' : s.detectedBy.map((d) => d.name).join(', ')}</li>
-        </ul>
-      )}
-      <p>
-        Challenge points: <strong>{signed(s.challengePoints)}</strong> ({challengeReason(s)})
-      </p>
-      <h3>Accusations</h3>
-      <Accusations
-        title="Right"
-        list={s.correctAccusations}
-        each={POINTS.correctAccusation}
-        content={content}
-        correct
-      />
-      <Accusations
-        title="Wrong"
-        list={s.wrongAccusations}
-        each={POINTS.wrongAccusation}
-        content={content}
-        correct={false}
-      />
-      <p>
-        <strong>Total: {points(s.total)}</strong>
-      </p>
-    </details>
+      </details>
+    </article>
   )
 }
 
-reveal.get('/reveal', async (c) => {
-  const game = await loadReveal(createDb(c.env.DB))
-  if (!phaseAllows(game.phase, 'seeReveal')) {
+// `?show=<id>` opens that player's breakdown too (the leaderboard's links).
+// Anything else in it is ignored.
+const showQuery = zValidator(
+  'query',
+  z.object({ show: z.coerce.number().int().positive().optional().catch(undefined) }),
+)
+
+reveal.get('/reveal', showQuery, async (c) => {
+  const db = createDb(c.env.DB)
+  if (!phaseAllows(await getPhase(db), 'seeReveal')) {
     if (c.req.header('HX-Request')) {
       c.header('HX-Redirect', '/play')
       return c.body(null, 200)
     }
     return c.redirect('/play', 303)
   }
+  // The game is over and nothing can change any more, so the scores are read
+  // once the phase says so.
+  const game = await loadFinalGame(db)
   const content = loadContent(c.env.CONTENT_SET)
   const scores = scoreGame(game.players, game.accusations)
+  const rank = rankLabeller(scores)
   const you = c.var.player.id
+  const { show } = c.req.valid('query')
   return c.render(
     <>
       <hgroup>
         <h1>Final results</h1>
         <p>Everyone's challenge, decoy and score.</p>
       </hgroup>
-      {scores.length === 0 ? (
-        <p>Nobody played.</p>
-      ) : (
-        <>
-          <Leaderboard scores={scores} you={you} />
-          <section>
-            <h2>Everyone's breakdown</h2>
-            {scores.map((s) => (
-              <Breakdown score={s} all={scores} you={you} content={content} />
-            ))}
-          </section>
-        </>
-      )}
+      <Leaderboard scores={scores} you={you} rank={rank} />
+      <section>
+        <h2>Everyone's breakdown</h2>
+        {scores.map((s) => (
+          <Breakdown score={s} you={you} open={s.id === you || s.id === show} rank={rank} content={content} />
+        ))}
+      </section>
     </>,
     { title: 'Final results' },
   )

@@ -39,8 +39,8 @@ const cookieFor = async (player: Player) =>
     )
   ).split(';')[0]!
 
-const getReveal = (cookie?: string, headers: Record<string, string> = {}) =>
-  exports.default.fetch(`${BASE}/reveal`, {
+const getReveal = (cookie?: string, headers: Record<string, string> = {}, path = '/reveal') =>
+  exports.default.fetch(`${BASE}${path}`, {
     headers: { ...(cookie && { Cookie: cookie }), ...headers },
     redirect: 'manual',
   })
@@ -48,13 +48,23 @@ const getReveal = (cookie?: string, headers: Record<string, string> = {}) =>
 const guess = (accuser: Player, accused: Player, challenge: number) =>
   db.insert(accusations).values({ accuserId: accuser.id, accusedId: accused.id, challenge })
 
-// The text of one player's breakdown: from their <details> to the next.
+// The HTML of one player's breakdown.
 const breakdownOf = (html: string, player: Player) => {
-  const start = html.indexOf(`<details id="player-${player.id}"`)
+  const start = html.indexOf(`<article id="player-${player.id}"`)
   if (start < 0) throw new Error(`no breakdown for ${player.name}`)
-  const end = html.indexOf('</details>', start)
-  return html.slice(start, end)
+  return html.slice(start, html.indexOf('</article>', start))
 }
+
+// The same, as text: tags dropped and spaces collapsed.
+const textOf = (html: string, player: Player) =>
+  breakdownOf(html, player)
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+// The ids of the players whose breakdown is open.
+const openBreakdowns = (html: string) =>
+  [...html.matchAll(/<article id="player-(\d+)"><details open/g)].map((m) => Number(m[1]))
 
 // The leaderboard's rows as [rank, name, points], with tags stripped.
 const leaderboardRows = (html: string) => {
@@ -155,31 +165,29 @@ describe('a full game worked out by hand', () => {
   it("gives one player's full breakdown", async () => {
     const { alice, bob } = await setUp()
     const html = await (await getReveal(await cookieFor(alice))).text()
-    const text = breakdownOf(html, bob).replace(/<[^>]+>/g, '')
-    expect(text).toContain('=3. Bob: 2 points')
-    expect(text).toContain('Challenge 2Description of Challenge 2')
-    expect(text).toContain('Decoy 12Description of Decoy 12')
-    expect(text).toContain('Completed: Yes')
-    expect(text).toContain('Detected by: Alice, Cara')
-    expect(text).toContain('Challenge points: +1 (completed but detected)')
-    expect(text).toContain('Right (+2)')
-    expect(text).toContain('Alice: Challenge 1 (+2)')
-    expect(text).toContain('Wrong (−1)')
-    expect(text).toContain('Eve: guessed Challenge 4, it was Challenge 5 (−1)')
-    expect(text).toContain('Total: 2 points')
+    expect(textOf(html, bob)).toBe(
+      '=3. Bob: 2 points' +
+        ' Challenge: Challenge 2 Description of Challenge 2' +
+        ' Decoy: Decoy 12 Description of Decoy 12' +
+        ' Completed: Yes Detected by: Alice, Cara' +
+        ' Challenge points (+1): completed but detected' +
+        ' Right accusations (+2): Alice: Challenge 1 (+2)' +
+        ' Wrong accusations (−1): Eve: guessed Challenge 4, it was Challenge 5 (−1)' +
+        ' Total: 2 points',
+    )
   })
 
   it('explains each challenge result', async () => {
     const { alice, cara, dev, eve } = await setUp()
     const html = await (await getReveal(await cookieFor(alice))).text()
-    const text = (p: Player) => breakdownOf(html, p).replace(/<[^>]+>/g, '')
+    const text = (p: Player) => textOf(html, p)
     expect(text(cara)).toContain('Completed: No')
     expect(text(cara)).toContain('Detected by: Nobody')
-    expect(text(cara)).toContain('Challenge points: 0 (not completed)')
-    expect(text(cara)).toContain('Right (+4)')
-    expect(text(cara)).toContain('Wrong (0)None.')
-    expect(text(dev)).toContain('Right (0)None.')
-    expect(text(eve)).toContain('Challenge points: +5 (completed and not detected)')
+    expect(text(cara)).toContain('Challenge points (0): not completed')
+    expect(text(cara)).toContain('Right accusations (+4): Bob: Challenge 2 (+2) Dev: Challenge 4 (+2)')
+    expect(text(cara)).toContain('Wrong accusations (0): none')
+    expect(text(dev)).toContain('Right accusations (0): none')
+    expect(text(eve)).toContain('Challenge points (+5): completed and not detected')
     expect(text(eve)).toContain('Cara: guessed Challenge 5, it was Challenge 3 (−1)')
     expect(text(eve)).toContain('Total: 4 points')
     expect(text(dev)).toMatch(/Total: 1 point$/)
@@ -188,8 +196,22 @@ describe('a full game worked out by hand', () => {
   it("opens only the phone's own breakdown", async () => {
     const { bob, eve } = await setUp()
     const html = await (await getReveal(await cookieFor(eve))).text()
-    expect(html.match(/<details id="player-\d+" open/g)).toEqual([`<details id="player-${eve.id}" open`])
+    expect(openBreakdowns(html)).toEqual([eve.id])
     expect(breakdownOf(html, bob)).not.toContain(' open')
+  })
+
+  it("links each leaderboard name to that player's breakdown, opened", async () => {
+    const { bob, eve } = await setUp()
+    const cookie = await cookieFor(eve)
+    const html = await (await getReveal(cookie)).text()
+    expect(html).toContain(`<a href="/reveal?show=${bob.id}#player-${bob.id}">Bob</a>`)
+    const shown = await (await getReveal(cookie, {}, `/reveal?show=${bob.id}`)).text()
+    expect(openBreakdowns(shown).sort()).toEqual([bob.id, eve.id].sort())
+    for (const bad of ['abc', '-1', '1.5', '999999']) {
+      const res = await getReveal(cookie, {}, `/reveal?show=${bad}`)
+      expect(res.status).toBe(200)
+      expect(openBreakdowns(await res.text())).toEqual([eve.id])
+    }
   })
 
   it('shows every player the same scores', async () => {
@@ -218,12 +240,25 @@ describe('awkward games', () => {
       ['1', 'Alice', '5'],
       ['2', 'Late (you)', '0'],
     ])
-    const text = breakdownOf(html, late).replace(/<[^>]+>/g, '')
+    const text = textOf(html, late)
     expect(text).toContain('Never got a challenge.')
     expect(text).toContain('Never got a decoy.')
-    expect(text).toContain('Challenge points: 0 (never got a challenge)')
+    expect(text).toContain('Challenge points (0): never got a challenge')
     expect(text).not.toContain('Completed:')
-    expect(breakdownOf(html, alice).replace(/<[^>]+>/g, '')).toContain('Wrong (0)None.')
+    expect(textOf(html, alice)).toContain('Wrong accusations (0): none')
+  })
+
+  it('shows negative scores with a minus sign', async () => {
+    const alice = await addPlayer('Alice', { challenge: 1, decoy: 11 })
+    const bob = await addPlayer('Bob', { challenge: 2, decoy: 12 })
+    await guess(alice, bob, 3)
+    await setPhase('reveal')
+    const html = await (await getReveal(await cookieFor(alice))).text()
+    expect(leaderboardRows(html)).toEqual([
+      ['1', 'Bob', '0'],
+      ['2', 'Alice (you)', '−1'],
+    ])
+    expect(textOf(html, alice)).toMatch(/^2\. Alice \(you\): −1 point .* Total: −1 point$/)
   })
 
   it('handles a game with no accusations', async () => {
