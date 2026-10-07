@@ -2,13 +2,13 @@ import { exports } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 
 const formPost = (headers: Record<string, string>) =>
-  exports.default.fetch('https://example.com/', {
+  exports.default.fetch('https://example.com/no-such-page', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...headers },
     body: 'a=1',
   })
 
-// No POST route exists yet, so getting past the CSRF check means a 404.
+// Posts to a path with no route, so getting past the CSRF check means a 404.
 describe('CSRF check on form posts', () => {
   it('lets a post with this site as its Origin through', async () => {
     const res = await formPost({ Origin: 'https://example.com' })

@@ -4,3 +4,7 @@
 // repeated spaces are ignored too, so "Dan " and "dan" are the same player.
 export const nameKey = (name: string): string =>
   name.trim().replace(/\s+/g, ' ').normalize('NFKC').toLowerCase()
+
+// The name as shown on screens: as typed, but without the spaces `nameKey`
+// ignores, so "  Dan  Smith " shows as "Dan Smith".
+export const cleanName = (name: string): string => name.trim().replace(/\s+/g, ' ')
