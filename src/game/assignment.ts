@@ -6,8 +6,10 @@
 // challenge and decoy differ from everyone else's; beyond 20, numbers are
 // reused as evenly as possible. Numbers already held are never changed.
 
+import { CONTENT_SIZE } from '../content/size'
+
 /** How many challenges (and decoys) the content has. */
-export const CONTENT_SIZE = 20
+export { CONTENT_SIZE }
 
 /** Returns a number in [0, 1), like `Math.random`. Tests pass a seeded one. */
 export type RandomSource = () => number

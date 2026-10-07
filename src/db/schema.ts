@@ -8,8 +8,12 @@ import { PHASES } from '../game/phases'
 // CONTENT_SIZE; their text comes from the content set (src/content/).
 
 const phaseList = sql.raw(PHASES.map((p) => `'${p}'`).join(', '))
+// Whole numbers only (SQLite would otherwise store 1.5 as it is), or null,
+// which `notNull()` refuses where a column needs a value.
 const inContentRange = (column: string) =>
-  sql.raw(`${column} between 1 and ${CONTENT_SIZE}`)
+  sql.raw(
+    `${column} is null or (typeof(${column}) = 'integer' and ${column} between 1 and ${CONTENT_SIZE})`,
+  )
 
 // The one game: a single row, id 1, added by the seed migration in the Lobby
 // phase. Read it with `getPhase` (src/db/game.ts).

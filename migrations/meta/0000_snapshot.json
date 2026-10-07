@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2481ef82-e582-4e81-b73c-f11bb455eb61",
+  "id": "f9bf69a9-eed3-4ff3-bbef-5f012e420f3f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "accusations": {
@@ -83,7 +83,7 @@
         },
         "accusations_challenge_valid": {
           "name": "accusations_challenge_valid",
-          "value": "challenge between 1 and 20"
+          "value": "challenge is null or (typeof(challenge) = 'integer' and challenge between 1 and 20)"
         }
       }
     },
@@ -205,11 +205,11 @@
       "checkConstraints": {
         "players_challenge_valid": {
           "name": "players_challenge_valid",
-          "value": "challenge between 1 and 20"
+          "value": "challenge is null or (typeof(challenge) = 'integer' and challenge between 1 and 20)"
         },
         "players_decoy_valid": {
           "name": "players_decoy_valid",
-          "value": "decoy between 1 and 20"
+          "value": "decoy is null or (typeof(decoy) = 'integer' and decoy between 1 and 20)"
         },
         "players_assigned_together": {
           "name": "players_assigned_together",

@@ -80,7 +80,7 @@ Each screen polls every 10 seconds with htmx. No unit may send a player another 
 ### 3.01 Join and rejoin (`01-join-and-rejoin.md`)
 
 - Depends on: 1.02, 2.02
-- Delivers: the join page (name, unique ignoring capitals, and a 4-digit PIN stored as a salted SHA-256 hash), the signed cookie that remembers the phone, rejoining with the same name and PIN from a new phone, and assignment for late joiners during Game on. Provides the "current player" helper the other player screens use.
+- Delivers: the join page (name, unique ignoring capitals, and a 4-digit PIN stored as a salted SHA-256 hash), the signed cookie that remembers the phone, rejoining with the same name and PIN from a new phone, and assignment for late joiners during Game on. The name shown on screens is trimmed, as its uniqueness key (`nameKey`, unit 1.02) ignores spaces at either end. Provides the "current player" helper the other player screens use.
 - Tests: duplicate names in different capitals, wrong PIN, rejoin keeps the same challenge and decoy, a late joiner gets an unused challenge.
 
 ### 3.02 Player screen (`02-player-screen.md`)
@@ -97,7 +97,7 @@ Each screen polls every 10 seconds with htmx. No unit may send a player another 
 ### 3.04 Host page (`04-host-page.md`)
 
 - Depends on: 1.02, 2.02
-- Delivers: the password-protected host page (Hono `basicAuth`). Who has joined, changing the phase (assigning the lobby at the start of Game on), marking or unmarking a player's completion, removing a player, resetting a PIN, the join QR code (`uqr`), and the clearly marked emergency "show all" button. Never shows challenges or decoys outside that button.
+- Delivers: the password-protected host page (Hono `basicAuth`). Who has joined, changing the phase (assigning the lobby at the start of Game on), marking or unmarking a player's completion, removing a player, resetting a PIN, the join QR code (`uqr`), and the clearly marked emergency "show all" button. Never shows challenges or decoys outside that button. Each phase change asks the host to confirm first, because phases only move forward and can't be undone (unit 1.02).
 - Tests: phase changes, host completion fixes while accusations are closed, removing a player.
 
 ### 3.05 Reveal (`05-reveal.md`)

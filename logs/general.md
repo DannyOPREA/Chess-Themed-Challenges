@@ -142,3 +142,18 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 
 **Decisions**
 - Declare both secrets in the scaffold. Why: units 1.03, 3.01 and 3.04 would otherwise each add them and conflict on the same lines (found by the unit reviewer).
+
+## 2026-10-07: Phase notes from unit 1.02
+
+**Done**
+- `docs/phases.md`: unit 3.04 now says each phase change asks the host to confirm, and unit 3.01 says the displayed name is trimmed. In the unit 1.02 PR.
+
+**Worked**
+- Nothing to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Confirm phase changes on the host page. Why: unit 1.02 made phases forward-only, as `docs/scope.md` describes, so a mis-tapped "close accusations" can't be undone; the unit reviewer pointed out the 3.04 thread reads only its own plan, so the safeguard has to be in `phases.md`.
+- Trim the displayed name in 3.01. Why: `nameKey` ignores spaces at either end, so "Dan " and "Dan" are one player and should look like one.

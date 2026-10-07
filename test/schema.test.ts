@@ -56,6 +56,11 @@ describe('players', () => {
     const player = await addPlayer('Player A')
     expect(player).toMatchObject({ name: 'Player A', challenge: null, decoy: null, completed: false })
     expect(player.joinedAt).toBeInstanceOf(Date)
+    // The migration's own defaults, without Drizzle's.
+    const raw = await env.DB.prepare(
+      "INSERT INTO players (name, name_key, pin_hash, pin_salt) VALUES ('Player B', 'player b', 'h', 's') RETURNING completed, challenge",
+    ).first()
+    expect(raw).toEqual({ completed: 0, challenge: null })
   })
 
   it('have names that are unique ignoring capitals and extra spaces', async () => {
@@ -71,6 +76,7 @@ describe('players', () => {
     await addPlayer('Player A', { challenge: 1, decoy: 20 })
     await refused(addPlayer('Player B', { challenge: 0, decoy: 1 }), 'players_challenge_valid')
     await refused(addPlayer('Player C', { challenge: 1, decoy: 21 }), 'players_decoy_valid')
+    await refused(addPlayer('Player D', { challenge: 1.5, decoy: 2 }), 'players_challenge_valid')
   })
 
   it('get a challenge and a decoy together, or neither', async () => {
@@ -163,6 +169,10 @@ describe('accusations', () => {
     const b = await addPlayer('Player B')
     await refused(
       db.insert(accusations).values({ accuserId: a.id, accusedId: b.id, challenge: 21 }),
+      'accusations_challenge_valid',
+    )
+    await refused(
+      db.insert(accusations).values({ accuserId: a.id, accusedId: b.id, challenge: 2.5 }),
       'accusations_challenge_valid',
     )
     await refused(

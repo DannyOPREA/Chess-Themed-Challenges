@@ -70,3 +70,26 @@ Plan: [docs/phase-1-foundation/02-data-and-content.md](../../docs/phase-1-founda
 **Decisions**
 - Follow `docs/scope.md` exactly on phases: forward only, and host completion fixes up to Accusations closed. Why: going back, or changing scores at the "final" leaderboard, is new game behaviour that needs Danny's OK, and the scope's version works. A mis-tapped phase change is better guarded by a confirmation on the host page (unit 3.04) than by an undo.
 - Enforce "assignment never changes" with a trigger. Why: it is a scope rule that a later unit's assignment code (2.02, 3.01, 3.04) could break with a careless `UPDATE`; the trigger turns that into a failed write and a failing test.
+
+## 2026-10-07: Unit review
+
+**Done**
+- Ran the `unit-reviewer` agent on the code-review fixes. Verdict "Fix needed", nothing Blocking, one Should fix and some notes:
+  1. Should fix: the safeguard for forward-only phases (a confirmation before each phase change on the host page) was only in this log, which the 3.04 thread won't read. Fixed: added to unit 3.04 in `docs/phases.md`, logged in `general.md`.
+  - Note: the 1 to 20 checks let fractions through (SQLite stored 1.5 as it is). Fixed: the checks also require `typeof(...) = 'integer'`. Tested.
+  - Note: the "start unassigned and not completed" test proved Drizzle's defaults, not the migration's. Fixed: it also inserts with raw SQL.
+  - Note: `players.name` keeps spaces `nameKey` ignores. Added to unit 3.01 in `docs/phases.md`: trim the displayed name.
+  - Notes left to later units: a join racing the start of Game on, and two late joiners picking the same challenge. Unit 2.02's plan already sets out the pattern for 3.01 and 3.04 (assign in the same batch as the phase change, assign anyone found unassigned, re-check `isLeastHeld`).
+  - Note: the reviewer may have stopped a `wrangler dev` of this session with `pkill`; none was running, so nothing was lost.
+- The reviewer confirmed: the real content matches Danny's file word for word apart from the two fixes; both content sets bundle and load under `wrangler dev`; all three migrations apply on a fresh local D1; and each safeguard's test fails when the safeguard is removed.
+- Merged `main` (units 1.03, 2.01, 2.02) into the branch. No conflicts. Unit 2.02 also declared `CONTENT_SIZE`; it now re-exports this unit's (logged in its log).
+- Regenerated the migrations once more for the new checks, as none has reached `main`.
+
+**Worked**
+- Typecheck and 110 tests pass after the merge.
+
+**Didn't work**
+- The first version of the integer check refused `null`, since SQLite's `typeof(null)` is `'null'`, so unassigned players couldn't be added. Fixed: `column is null or (...)`; `notNull()` still refuses null where a value is needed.
+
+**Decisions**
+- Status set to Done, pending the second unit review. Why: the remaining work is the review itself; any finding gets its own entry.

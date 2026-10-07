@@ -6,7 +6,7 @@ CREATE TABLE `accusations` (
 	FOREIGN KEY (`accuser_id`) REFERENCES `players`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`accused_id`) REFERENCES `players`(`id`) ON UPDATE no action ON DELETE cascade,
 	CONSTRAINT "accusations_not_self" CHECK(accuser_id <> accused_id),
-	CONSTRAINT "accusations_challenge_valid" CHECK(challenge between 1 and 20)
+	CONSTRAINT "accusations_challenge_valid" CHECK(challenge is null or (typeof(challenge) = 'integer' and challenge between 1 and 20))
 );
 --> statement-breakpoint
 CREATE INDEX `accusations_accused_idx` ON `accusations` (`accused_id`);--> statement-breakpoint
@@ -27,8 +27,8 @@ CREATE TABLE `players` (
 	`decoy` integer,
 	`completed` integer DEFAULT false NOT NULL,
 	`joined_at` integer DEFAULT (unixepoch()) NOT NULL,
-	CONSTRAINT "players_challenge_valid" CHECK(challenge between 1 and 20),
-	CONSTRAINT "players_decoy_valid" CHECK(decoy between 1 and 20),
+	CONSTRAINT "players_challenge_valid" CHECK(challenge is null or (typeof(challenge) = 'integer' and challenge between 1 and 20)),
+	CONSTRAINT "players_decoy_valid" CHECK(decoy is null or (typeof(decoy) = 'integer' and decoy between 1 and 20)),
 	CONSTRAINT "players_assigned_together" CHECK((challenge is null) = (decoy is null)),
 	CONSTRAINT "players_completed_when_assigned" CHECK(completed = 0 or challenge is not null)
 );
