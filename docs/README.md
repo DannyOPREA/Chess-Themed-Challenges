@@ -18,7 +18,7 @@ Every build plan has a log at the same path under `logs/`. For example, `docs/ph
 
 ## Writing and keeping a plan
 
-1. Write the plan from the template below and create its log with a first entry ("Plan written"), before building starts.
+1. Write the plan from the template below and create its log with a first entry ("Plan written"), before building starts. Danny approves `phases.md`. A unit plan that stays within `phases.md` and `scope.md` is built without a separate OK, in the same PR as the plan, and Danny reviews it there.
 2. A plan implements `scope.md` and follows `CLAUDE.md`. If a plan needs something `scope.md` doesn't allow, or anything under "Not in scope", ask Danny first.
 3. Update the status in the plan's header as the unit moves on: `Draft`, `Agreed`, `In progress`, `Done`, or `Dropped`.
 4. When the work turns out differently from the plan, edit the plan in place so it describes what was actually built, and record the change and the reason in the log. The plan says what the unit is; the log says how it got there.
