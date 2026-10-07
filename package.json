@@ -9,7 +9,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "cf-typegen": "wrangler types --strict-vars=false",
-    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy"
+    "deploy": "[ -n \"$DEPLOY_API_TOKEN\" ] || { echo \"The build secret DEPLOY_API_TOKEN is not set (README.md, Deploying, step 5)\" >&2; exit 1; }; export CLOUDFLARE_API_TOKEN=\"$DEPLOY_API_TOKEN\" && wrangler d1 migrations apply DB --remote && wrangler deploy"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.9.1",
