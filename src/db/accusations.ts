@@ -1,8 +1,8 @@
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
-import { PHASES, phaseAllows } from '../game/phases'
+import { phaseAllows } from '../game/phases'
 import { byName } from '../game/scoring'
 import type { Db } from './client'
-import { currentPhase } from './game'
+import { currentPhaseAllows } from './game'
 import { accusations, game, players } from './schema'
 
 // Making, changing and clearing accusations (unit 3.03). The table keeps one
@@ -10,9 +10,9 @@ import { accusations, game, players } from './schema'
 // player. Changing a guess updates the row and clearing it deletes the row, so
 // at the reveal the table holds exactly everyone's final guesses.
 
-// The phases in which players can accuse (unit 1.02's rules: Game on only).
-const ACCUSE_PHASES = PHASES.filter((p) => phaseAllows(p, 'accuse'))
-const accusationsOpen = inArray(currentPhase, ACCUSE_PHASES)
+// At the moment a write runs, the phase allows accusing (unit 1.02's rules:
+// Game on only).
+const accusationsOpen = currentPhaseAllows('accuse')
 
 /** Another player, with this player's own current guess about them (or null). */
 export type Target = { id: number; name: string; guess: number | null }

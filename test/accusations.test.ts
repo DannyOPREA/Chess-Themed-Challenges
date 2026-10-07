@@ -187,6 +187,15 @@ describe('the accusations screen', () => {
     expect(html).toContain('You have a guess for 0 of 2 players.')
   })
 
+  it("is where the player screen's accusations button goes (unit 3.02)", async () => {
+    const [ann] = [await addPlayer('Ann'), await addPlayer('Bob')]
+    await setPhase('game_on')
+    expect(await (await get('/play', ann)).text()).toContain('href="/accuse"')
+    const res = await get('/accuse', ann)
+    expect(res.status).toBe(200)
+    expect(await res.text()).toContain('<h1>Accusations</h1>')
+  })
+
   it('says so when nobody else has joined', async () => {
     const ann = await addPlayer('Ann')
     await setPhase('game_on')

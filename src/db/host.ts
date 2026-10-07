@@ -1,9 +1,9 @@
-import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 import { hashPin } from '../auth/pin'
 import { assignPlayers, type RandomSource } from '../game/assignment'
-import { canChangePhase, PHASES, type Phase, phaseAllows } from '../game/phases'
+import { canChangePhase, type Phase } from '../game/phases'
 import type { Db } from './client'
-import { currentPhase } from './game'
+import { currentPhase, currentPhaseAllows } from './game'
 import { game, players } from './schema'
 
 // The host page's reads and writes (unit 3.04). Only the host page calls these.
@@ -97,9 +97,6 @@ export const changePhase = async (
   return (results.at(-1) as { phase: Phase }[]).length === 1
 }
 
-// The phases in which the host can fix a completion (unit 1.02's rules).
-const COMPLETION_PHASES = PHASES.filter((p) => phaseAllows(p, 'hostMarkCompletion'))
-
 /**
  * Marks or unmarks a player's completion. Returns false, changing nothing, if
  * the player is gone, has no challenge yet, or the phase doesn't allow it at
@@ -110,7 +107,7 @@ export const setCompletion = async (db: Db, id: number, completed: boolean) => {
   const rows = await db
     .update(players)
     .set({ completed })
-    .where(and(eq(players.id, id), isNotNull(players.challenge), inArray(currentPhase, COMPLETION_PHASES)))
+    .where(and(eq(players.id, id), isNotNull(players.challenge), currentPhaseAllows('hostMarkCompletion')))
     .returning({ id: players.id })
   return rows.length === 1
 }

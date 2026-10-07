@@ -55,3 +55,19 @@ Plan: [docs/phase-3-screens/03-accusations.md](../../docs/phase-3-screens/03-acc
 **Decisions**
 - Keep the htmx answer to a save as text plus an out-of-band count, not a whole row. Why: replacing the form is what dropped a quick second pick (code review finding 4).
 - A failed save is reported on its row, not retried. Why: the player can see it and pick again; retrying silently could save an older pick after a newer one.
+
+## 2026-10-07: Merged main (3.02 Player screen, 3.05 Reveal)
+
+**Done**
+- Merged `main` with units 3.05 (PR #15) and 3.02 (PR #14). Kept both route lines in `src/index.ts`.
+- Unit 3.02 had meanwhile moved `currentPhase` into `src/db/game.ts` too, with `currentPhaseAllows(action)`. Took its versions of `src/db/game.ts`, `src/db/host.ts` and `src/db/players.ts`, and `setGuess` now guards with `currentPhaseAllows('accuse')`.
+- Checked the player screen's accusations buttons link to `/accuse`, and added a test that follows the link.
+
+**Worked**
+- Agreeing the route with the 3.02 thread at the start meant no change to its button was needed.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Use 3.02's `currentPhaseAllows` rather than this unit's own copy. Why: one shared guard for every phase-dependent write.
