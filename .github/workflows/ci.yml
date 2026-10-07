@@ -18,7 +18,7 @@ jobs:
       - if: steps.app.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: npm
 
       - if: steps.app.outputs.exists == 'true'
@@ -29,3 +29,8 @@ jobs:
 
       - if: steps.app.outputs.exists == 'true'
         run: npm test
+
+      # Builds the Worker as Workers Builds would, without uploading anything,
+      # so a change that can't deploy fails here rather than after merging.
+      - if: steps.app.outputs.exists == 'true'
+        run: npx wrangler deploy --dry-run --outdir dist

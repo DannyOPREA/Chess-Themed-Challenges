@@ -42,7 +42,8 @@
       "Bash(npx wrangler secret *)",
       "Bash(wrangler secret *)",
       "Bash(npx wrangler * --remote*)",
-      "Bash(wrangler * --remote*)"
+      "Bash(wrangler * --remote*)",
+      "Bash(npm run deploy*)"
     ]
   }
 }
