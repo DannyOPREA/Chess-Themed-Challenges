@@ -15,24 +15,27 @@ import type { AppEnv } from '../env'
 
 const COOKIE = 'player'
 
-const cookieOptions: CookieOptions = {
+// `Secure` whenever the app is served over HTTPS, as it always is in
+// production. Not on `npm run dev`'s plain http://localhost, where Safari would
+// otherwise drop the cookie.
+const cookieOptions = (c: Context): CookieOptions => ({
   path: '/',
   httpOnly: true,
-  secure: true,
+  secure: new URL(c.req.url).protocol === 'https:',
   sameSite: 'Lax',
   // Long enough to outlast one night out; game data cleared in between (unit
   // 4.01) logs everyone out anyway, because the join time no longer matches.
   maxAge: 7 * 24 * 60 * 60,
-}
+})
 
 const cookieValue = (player: Pick<Player, 'id' | 'joinedAt'>) =>
   `${player.id}.${Math.floor(player.joinedAt.getTime() / 1000)}`
 
 export const logIn = <E extends AppEnv>(c: Context<E>, player: Pick<Player, 'id' | 'joinedAt'>) =>
-  setSignedCookie(c, COOKIE, cookieValue(player), c.env.COOKIE_SECRET, cookieOptions)
+  setSignedCookie(c, COOKIE, cookieValue(player), c.env.COOKIE_SECRET, cookieOptions(c))
 
 export const logOut = <E extends AppEnv>(c: Context<E>) => {
-  deleteCookie(c, COOKIE, { path: '/', secure: true })
+  deleteCookie(c, COOKIE, cookieOptions(c))
 }
 
 // The player this phone is logged in as, or nothing (no cookie, a cookie that

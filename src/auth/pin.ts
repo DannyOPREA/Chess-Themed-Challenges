@@ -1,29 +1,27 @@
+import { timingSafeEqual } from 'hono/utils/buffer'
+import { sha256 } from 'hono/utils/crypto'
 import { z } from 'zod'
 
-// Players choose a 4-digit PIN when they join and use it with their name to
-// get back in from another phone (docs/scope.md, "Joining and rejoining"). It
-// is stored as a salted SHA-256 hash made with the runtime's Web Crypto
-// (CLAUDE.md, "Stack"). There is no lockout after wrong PINs.
+// Players' 4-digit PINs, stored as a salted SHA-256 hash (CLAUDE.md, "Stack"),
+// both as hex in `players.pin_hash` and `players.pin_salt`. Hono's own helpers
+// do the hashing (Web Crypto) and the constant-time compare.
 
-export const pinSchema = z.string().regex(/^\d{4}$/, 'Your PIN must be exactly 4 digits.')
+/** A PIN as typed: exactly four digits. */
+export const pinSchema = z.string().regex(/^\d{4}$/, 'The PIN must be 4 digits')
 
-export type StoredPin = { pinHash: string; pinSalt: string }
+const digest = async (salt: string, pin: string) => {
+  const hash = await sha256(`${salt}:${pin}`)
+  if (!hash) throw new Error('Web Crypto is not available')
+  return hash
+}
 
-const toHex = (bytes: ArrayBuffer | Uint8Array): string =>
-  Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, '0')).join('')
-
-const digest = async (salt: string, pin: string): Promise<string> =>
-  toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${salt}:${pin}`)))
-
-// A fresh random salt for every PIN, so two players with the same PIN get
-// different hashes. Both values are hex, for `players.pin_hash` and `pin_salt`.
-export const hashPin = async (pin: string): Promise<StoredPin> => {
-  const pinSalt = toHex(crypto.getRandomValues(new Uint8Array(16)))
+/** Hashes a PIN with a fresh random salt, for storing. */
+export const hashPin = async (pin: string): Promise<{ pinHash: string; pinSalt: string }> => {
+  // A random UUID without its dashes: 32 hex characters, 122 random bits.
+  const pinSalt = crypto.randomUUID().replaceAll('-', '')
   return { pinHash: await digest(pinSalt, pin), pinSalt }
 }
 
-export const verifyPin = async (pin: string, stored: StoredPin): Promise<boolean> => {
-  const actual = new TextEncoder().encode(await digest(stored.pinSalt, pin))
-  const expected = new TextEncoder().encode(stored.pinHash)
-  return actual.byteLength === expected.byteLength && crypto.subtle.timingSafeEqual(actual, expected)
-}
+/** Whether `pin` matches a stored hash and salt. */
+export const verifyPin = async (pin: string, stored: { pinHash: string; pinSalt: string }): Promise<boolean> =>
+  timingSafeEqual(await digest(stored.pinSalt, pin), stored.pinHash)

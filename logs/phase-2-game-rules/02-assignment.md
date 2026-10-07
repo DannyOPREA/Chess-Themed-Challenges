@@ -103,3 +103,17 @@ Plan: [docs/phase-2-game-rules/02-assignment.md](../../docs/phase-2-game-rules/0
 
 **Decisions**
 - One source for the number of challenges. Why: units 1.02 and 2.02 were built in parallel and each declared it; the content files and the database checks use the 1.02 one, so a change to the content size can't leave assignment drawing from a different range.
+
+## 2026-10-07: Late-joiner pattern replaced by unit 3.01
+
+**Done**
+- Unit 3.01's PR updated the comment on `isLeastHeld` and added a line to this plan's "Not in this unit": late joiners are not re-checked with `isLeastHeld` after writing; 3.01 checks for a clash inside the write instead.
+
+**Worked**
+- Nothing to note.
+
+**Didn't work**
+- The suggested pattern (write, re-check, re-pick) conflicts with 1.02's trigger, which refuses changing a challenge or decoy once written.
+
+**Decisions**
+- Keep `isLeastHeld` rather than delete it. Why: tests use it to check that late joiners' numbers are least-held, and it is small.

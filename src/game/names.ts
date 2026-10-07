@@ -5,6 +5,13 @@
 export const nameKey = (name: string): string =>
   name.trim().replace(/\s+/g, ' ').normalize('NFKC').toLowerCase()
 
-// The name as shown on screens: as typed, but without the spaces `nameKey`
-// ignores, so "  Dan  Smith " shows as "Dan Smith".
-export const cleanName = (name: string): string => name.trim().replace(/\s+/g, ' ')
+// The name as stored and shown on screens: as typed, but without the spaces
+// `nameKey` ignores, so "  Dan  Smith " shows as "Dan Smith", and without
+// invisible characters (control and format characters such as zero-width
+// spaces), so a name can't look blank or look like someone else's.
+export const cleanName = (name: string): string =>
+  name
+    .replace(/\s/g, ' ')
+    .replace(/[\p{Cc}\p{Cf}]/gu, '')
+    .replace(/ +/g, ' ')
+    .trim()

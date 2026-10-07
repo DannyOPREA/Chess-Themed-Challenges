@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:test'
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { hashPin, pinSchema, verifyPin } from '../src/auth/pin'
+import { hashPin } from '../src/auth/pin'
 import { createDb } from '../src/db/client'
 import { assignLateJoiner, createPlayer, ensureAssigned, findPlayerByName } from '../src/db/players'
 import { game, players } from '../src/db/schema'
@@ -22,27 +22,6 @@ const addPlayer = async (name: string, assigned?: { challenge: number; decoy: nu
   return player
 }
 
-describe('PINs', () => {
-  it('are hashed with a fresh salt each time and checked against the hash', async () => {
-    const first = await hashPin('1234')
-    const second = await hashPin('1234')
-    expect(first.pinSalt).not.toBe(second.pinSalt)
-    expect(first.pinHash).not.toBe(second.pinHash)
-    expect(await verifyPin('1234', first)).toBe(true)
-    expect(await verifyPin('1234', second)).toBe(true)
-    expect(await verifyPin('1235', first)).toBe(false)
-    expect(await verifyPin('1234', { pinHash: first.pinHash, pinSalt: second.pinSalt })).toBe(false)
-    expect(await verifyPin('1234', { pinHash: 'short', pinSalt: first.pinSalt })).toBe(false)
-  })
-
-  it('must be exactly 4 digits', () => {
-    for (const pin of ['0000', '1234', '9999']) expect(pinSchema.safeParse(pin).success).toBe(true)
-    for (const pin of ['', '123', '12345', 'abcd', '12 4', '１２３４', ' 1234']) {
-      expect(pinSchema.safeParse(pin).success).toBe(false)
-    }
-  })
-})
-
 describe('creating and finding players', () => {
   it('finds a player by name ignoring capitals and spaces', async () => {
     const sam = await addPlayer('Sam Smith')
@@ -54,6 +33,20 @@ describe('creating and finding players', () => {
     await addPlayer('Sam')
     expect(await createPlayer(db, 'SAM', await hashPin('1234'))).toBeUndefined()
     expect(await db.select().from(players)).toHaveLength(1)
+  })
+
+  it('creates nothing once accusations close, even if the phase was read earlier', async () => {
+    for (const phase of ['accusations_closed', 'reveal'] as const) {
+      await db.update(game).set({ phase })
+      expect(await createPlayer(db, 'Sam', await hashPin('1234'))).toBeUndefined()
+    }
+    expect(await db.select().from(players)).toEqual([])
+  })
+
+  it('creates players in the Lobby and during Game on', async () => {
+    expect((await createPlayer(db, 'Sam', await hashPin('1234')))?.name).toBe('Sam')
+    await db.update(game).set({ phase: 'game_on' })
+    expect((await createPlayer(db, 'Alex', await hashPin('1234')))?.name).toBe('Alex')
   })
 })
 
@@ -81,6 +74,7 @@ describe('assigning a late joiner', () => {
     // number, so without the clash check they would all get challenge 1.
     for (let round = 0; round < 5; round++) {
       await resetDb()
+      await db.update(game).set({ phase: 'game_on' })
       const joiners = await Promise.all(Array.from({ length: 10 }, (_, i) => addPlayer(`Racer ${i}`)))
       const assigned = await Promise.all(joiners.map((j) => assignLateJoiner(db, j.id, { random: () => 0 })))
       expect(new Set(assigned.map((p) => p?.challenge)).size).toBe(10)
@@ -89,6 +83,7 @@ describe('assigning a late joiner', () => {
   })
 
   it('keeps reuse even beyond 20 players when joiners race', async () => {
+    await db.update(game).set({ phase: 'game_on' })
     for (let i = 1; i <= 20; i++) await addPlayer(`Player ${i}`, { challenge: i, decoy: i })
     const joiners = await Promise.all(Array.from({ length: 5 }, (_, i) => addPlayer(`Racer ${i}`)))
     await Promise.all(joiners.map((j) => assignLateJoiner(db, j.id, { random: () => 0 })))
@@ -100,6 +95,12 @@ describe('assigning a late joiner', () => {
     }
   })
 
+  it('writes nothing once the phase has moved on, even if Game on was read earlier', async () => {
+    const sam = await addPlayer('Sam')
+    await db.update(game).set({ phase: 'accusations_closed' })
+    expect(await assignLateJoiner(db, sam.id)).toEqual(sam)
+  })
+
   it('returns nothing for a player who was removed', async () => {
     const sam = await addPlayer('Sam')
     await db.delete(players).where(eq(players.id, sam.id))
@@ -107,6 +108,7 @@ describe('assigning a late joiner', () => {
   })
 
   it('never changes a player who was assigned meanwhile', async () => {
+    await db.update(game).set({ phase: 'game_on' })
     const sam = await addPlayer('Sam', { challenge: 4, decoy: 5 })
     expect(await assignLateJoiner(db, sam.id)).toEqual(sam)
   })

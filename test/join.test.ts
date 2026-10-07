@@ -147,10 +147,10 @@ describe('joining', () => {
   })
 
   it.each([
-    ['a 3-digit PIN', 'Sam', '123', 'Your PIN must be exactly 4 digits.'],
-    ['a 5-digit PIN', 'Sam', '12345', 'Your PIN must be exactly 4 digits.'],
-    ['letters in the PIN', 'Sam', 'abcd', 'Your PIN must be exactly 4 digits.'],
-    ['no PIN', 'Sam', '', 'Your PIN must be exactly 4 digits.'],
+    ['a 3-digit PIN', 'Sam', '123', 'The PIN must be 4 digits'],
+    ['a 5-digit PIN', 'Sam', '12345', 'The PIN must be 4 digits'],
+    ['letters in the PIN', 'Sam', 'abcd', 'The PIN must be 4 digits'],
+    ['no PIN', 'Sam', '', 'The PIN must be 4 digits'],
     ['no name', '', '1234', 'Enter your name.'],
     ['a name of only spaces', '    ', '1234', 'Enter your name.'],
     ['a name over 30 characters', 'x'.repeat(31), '1234', 'Keep your name to 30 characters or fewer.'],
@@ -164,14 +164,49 @@ describe('joining', () => {
     expect(await allPlayers()).toEqual([])
   })
 
-  it('refuses a form with no fields at all', async () => {
+  it('refuses a form with no fields at all, in plain words', async () => {
     const res = await exports.default.fetch(`${BASE}/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: BASE },
       body: '',
     })
     expect(res.status).toBe(400)
+    expect(await res.text()).toContain('Enter your name.')
     expect(await allPlayers()).toEqual([])
+  })
+
+  it('refuses a missing PIN in plain words', async () => {
+    const res = await exports.default.fetch(`${BASE}/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: BASE },
+      body: 'name=Sam',
+    })
+    expect(res.status).toBe(400)
+    expect(await res.text()).toContain('The PIN must be 4 digits')
+  })
+
+  it('drops invisible characters from names, so a name cannot look blank or like someone else', async () => {
+    const blank = await join('\u200B\u200D\u2060', '1234')
+    expect(blank.status).toBe(400)
+    expect(await blank.text()).toContain('Enter your name.')
+    await joinedCookie('Sam\u200B Smith', '1234')
+    expect((await allPlayers())[0]?.name).toBe('Sam Smith')
+    const lookalike = await join('Sam Smith\u200B', '5678')
+    expect(await lookalike.text()).toContain(NAME_TAKEN)
+    expect(await allPlayers()).toHaveLength(1)
+  })
+
+  it('leaves Secure off the cookie only on plain http, for the local dev server', async () => {
+    const res = await exports.default.fetch('http://localhost:8787/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: 'http://localhost:8787' },
+      body: new URLSearchParams({ name: 'Sam', pin: '1234' }).toString(),
+      redirect: 'manual',
+    })
+    expect(res.status).toBe(303)
+    const setCookie = res.headers.getSetCookie().find((c) => c.startsWith('player='))
+    expect(setCookie).toMatch(/HttpOnly/)
+    expect(setCookie).not.toMatch(/Secure/)
   })
 
   it('leaves players who join in the Lobby without a challenge until Game on', async () => {
