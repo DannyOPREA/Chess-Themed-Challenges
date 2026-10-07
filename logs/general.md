@@ -70,3 +70,25 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 - One unit is one PR, and the log entry goes in the same PR as the work. Why: the log then lands on `main` together with the code it describes.
 - Danny approves the phase-by-phase plan, and unit plans are built without a separate OK unless they go beyond it or the scope. Why: the build has to be ready by Thursday, and Danny still reviews every PR. Danny chose this.
 - A general log for work outside any unit. Why: keeps the record of decisions complete. Danny chose this.
+
+## 2026-10-07: Working agreement
+
+**Done**
+- Recorded the working agreement between Danny and Claude in `CLAUDE.md`, with the plans and logs rules now part of it.
+- Added the `unit-reviewer` sub-agent (`.claude/agents/unit-reviewer.md`) and the review steps every unit passes before it is merged.
+- Updated `docs/README.md` so plans no longer wait for Danny's approval.
+
+**Worked**
+- The `main` ruleset (PR required, 0 approvals, `check` CI required) needs no human approval, so a Claude thread can merge its own PR once `check` passes. This PR is the first one Claude merges itself.
+- Playwright and Chromium are preinstalled in cloud containers, so the reviewer can play the app in a phone-sized browser without adding a dependency.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Claude plans, builds, reviews and merges units without waiting for Danny, and asks only when there is no obvious answer or several obvious answers and Danny's preference is unknown. Why: Danny wants to be as hands-off as possible and will review the whole app at the end.
+- Danny no longer approves `docs/phases.md` or reviews unit PRs. Why: Danny's agreement replaces those earlier decisions from the plans and logs PR.
+- Every unit is reviewed twice before merging: the built-in `/code-review` skill and a separate `unit-reviewer` agent that also runs the app. Why: Danny asked for a review at least as strict as their own; the built-in skill is reused, and the custom agent only adds what it can't know (the plan, the scope, the spoiler rule, and playing the screens). This reverses the earlier choice of no custom sub-agents, which assumed Danny reviewed every PR.
+- Merges wait for Danny while the app is in live use (from 17:00 UK on Thursday 2026-10-08 and on Saturday 2026-10-10, until Danny says it's over). Why: every merge to `main` redeploys the live app, so a merge mid-game could break the night. The 17:00 start is Claude's default; Danny can change it.
+- Switching to the real content stays Danny's call. Why: it clears all game data in production and its timing depends on the Thursday test run.
+- A whole-app check thread runs after the last unit, before Danny's review. Why: unit reviews can miss problems that only show in a full game.

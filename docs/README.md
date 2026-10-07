@@ -4,7 +4,7 @@ This folder holds two kinds of file.
 
 - **Reference docs**, at the top level of `docs/`. They have no log.
   - `scope.md`: the agreed spec. It decides how the game behaves.
-  - `phases.md`: the phase-by-phase plan, listing each phase and its units. It will be written once the phases are agreed with Danny.
+  - `phases.md`: the phase-by-phase plan, listing each phase and its units. Claude writes it within `scope.md`.
   - `README.md`: this file.
 - **Build plans**, one sub-folder per phase. Each plan covers one unit: a piece of work small enough to build, test and merge in one PR.
 
@@ -18,7 +18,7 @@ Every build plan has a log at the same path under `logs/`. For example, `docs/ph
 
 ## Writing and keeping a plan
 
-1. Write the plan from the template below and create its log with a first entry ("Plan written"), before building starts. Danny approves `phases.md`. A unit plan that stays within `phases.md` and `scope.md` is built without a separate OK, in the same PR as the plan, and Danny reviews it there.
+1. Write the plan from the template below and create its log with a first entry ("Plan written"), before building starts. Plans are built in the same PR, without waiting for Danny; the review before merging is Claude's, as set out in the working agreement in `CLAUDE.md`.
 2. A plan implements `scope.md` and follows `CLAUDE.md`. If a plan needs something `scope.md` doesn't allow, or anything under "Not in scope", ask Danny first.
 3. Update the status in the plan's header as the unit moves on: `Draft`, `Agreed`, `In progress`, `Done`, or `Dropped`.
 4. When the work turns out differently from the plan, edit the plan in place so it describes what was actually built, and record the change and the reason in the log. The plan says what the unit is; the log says how it got there.
