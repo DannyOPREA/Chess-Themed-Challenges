@@ -3,12 +3,14 @@
 // their final accusations from the database and passes them in.
 
 // A player at the end of the game. Challenges and decoys are numbers 1 to 20
-// (the content's order), as everywhere else in the app.
+// (the content's order), as everywhere else in the app. Both are null for a
+// player who never got one (unit 3.05): they score no challenge points, can't
+// be detected, and guesses about them are ignored.
 export type ScoringPlayer = {
   id: number
   name: string
-  challenge: number
-  decoy: number
+  challenge: number | null
+  decoy: number | null
   completed: boolean
 }
 
@@ -44,8 +46,9 @@ export type AccusationResult = {
 export type PlayerScore = {
   id: number
   name: string
-  challenge: number
-  decoy: number
+  // Null for a player who never got a challenge and decoy.
+  challenge: number | null
+  decoy: number | null
   completed: boolean
   // True when at least one other player's final guess about this player is right.
   detected: boolean
@@ -69,7 +72,7 @@ export const byName = (a: { id: number; name: string }, b: { id: number; name: s
 const byAccusedName = (a: AccusationResult, b: AccusationResult) =>
   compareNames(a.accusedName, b.accusedName) || a.accusedId - b.accusedId
 
-type Judged = ScoringAccusation & { accused: ScoringPlayer; correct: boolean }
+type Judged = ScoringAccusation & { accused: ScoringPlayer; actual: number; correct: boolean }
 
 // Players by id, keeping the first if an id appears twice.
 function playersById(players: ScoringPlayer[]) {
@@ -80,17 +83,20 @@ function playersById(players: ScoringPlayer[]) {
 
 // The accusations that count, each marked right or wrong. Ignored: guesses by
 // or about a player who isn't in the list (removed by the host), guesses about
-// oneself, and guesses that aren't a challenge number. If a player has more
-// than one guess about the same player, the last one in the list counts.
+// a player with no challenge, guesses about oneself, and guesses that aren't a
+// challenge number. If a player has more than one guess about the same player,
+// the last one in the list counts.
 function judge(byId: Map<number, ScoringPlayer>, accusations: ScoringAccusation[]): Judged[] {
   const final = new Map<string, Judged>()
   for (const a of accusations) {
     const accused = byId.get(a.accusedId)
     if (!accused || !byId.has(a.accuserId) || a.accuserId === a.accusedId) continue
+    const actual = accused.challenge
+    if (actual === null) continue
     if (!Number.isInteger(a.challenge) || a.challenge < 1 || a.challenge > CHALLENGE_COUNT) continue
     const key = `${a.accuserId}:${a.accusedId}`
     final.delete(key)
-    final.set(key, { ...a, accused, correct: a.challenge === accused.challenge })
+    final.set(key, { ...a, accused, actual, correct: a.challenge === actual })
   }
   return [...final.values()]
 }
@@ -128,7 +134,7 @@ export function scoreGame(
       accusedId: a.accused.id,
       accusedName: a.accused.name,
       guessed: a.challenge,
-      actual: a.accused.challenge,
+      actual: a.actual,
     }
     const own = made.get(a.accuserId)!
     if (a.correct) {
@@ -143,11 +149,12 @@ export function scoreGame(
     const detectedBy = detectors.get(player.id)!.sort(byName)
     const { correct, wrong } = made.get(player.id)!
     const detected = detectedBy.length > 0
-    const challengePoints = !player.completed
-      ? POINTS.notCompleted
-      : detected
-        ? POINTS.completedDetected
-        : POINTS.completedUndetected
+    const challengePoints =
+      !player.completed || player.challenge === null
+        ? POINTS.notCompleted
+        : detected
+          ? POINTS.completedDetected
+          : POINTS.completedUndetected
     const accusationPoints =
       correct.length * POINTS.correctAccusation + wrong.length * POINTS.wrongAccusation
     return {
