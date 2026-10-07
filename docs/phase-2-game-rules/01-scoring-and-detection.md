@@ -27,7 +27,7 @@ The game's end-of-night maths as pure functions: who was detected, each player's
    - Ranks use standard competition ranking: tied players share a rank and the next rank skips (1, 1, 3). Within a tie, and in every list in the breakdown, players are listed by name, ignoring capitals.
    - `detect()` lists each player's detectors by id, lowest first, so the order doesn't depend on the order rows come from the database.
    - Ignored: accusations by or about a player who isn't in the player list (removed by the host), self-accusations, and guesses that aren't a challenge number from 1 to 20.
-   - If one player has more than one guess about the same player, the last one passed in counts. The database should never hold two (unit 1.02), but a reveal that fails for everyone would be worse than a guess picked by order.
+   - If one player has more than one guess about the same player, the last valid one passed in counts (ignored guesses never replace a valid one). The database should never hold two (unit 1.02), but a reveal that fails for everyone would be worse than a guess picked by order.
    - A player listed twice (same id) is scored once.
 
 ## Tests

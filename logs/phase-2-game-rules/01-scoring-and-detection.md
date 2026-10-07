@@ -68,3 +68,21 @@ Plan: [docs/phase-2-game-rules/01-scoring-and-detection.md](../../docs/phase-2-g
 
 **Decisions**
 - Bad input is ignored or resolved rather than thrown. Why: the reveal runs once, on the night, for everyone; a wrong-looking guess costing nothing is better than a 500 page for 20 players.
+
+## 2026-10-07: Second unit review
+
+**Done**
+- Ran the `unit-reviewer` agent again on the fixed branch. Verdict "Pass", nothing blocking or to fix. It re-worked the five-player game and a new six-player game by hand (with a removed player, a self-accusation, duplicate and out-of-range guesses and a tie), and both matched. Notes:
+  - The plan said "the last one passed in counts", but ignored guesses (out of range, self, removed player) never replace an earlier valid one. Fixed the plan's wording to "the last valid one".
+  - `CHALLENGE_COUNT` is a local 20 rather than the content's count. Left: the scope fixes 20, and unit 1.02's content module isn't merged yet.
+  - A player id listed twice with different data keeps the first copy silently. Left: it only guards against a bad query in 3.05.
+  - This log entry was still to be written. Done.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- None new.
