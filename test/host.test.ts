@@ -544,12 +544,21 @@ describe('resetting the game', () => {
     expect(await getPhase(db)).toBe('lobby')
   })
 
-  it('does nothing from a stale confirm page: a join, a removal, a phase change or a reset since', async () => {
+  it('says the game was reset on a double tap, not that it was refused', async () => {
+    await setPhase('game_on')
+    await addPlayer('Player A', { challenge: 1, decoy: 1 })
+    const page = await openReset()
+    expect((await post('/host/reset', page)).headers.get('Location')).toBe('/host?done=reset')
+    expect((await post('/host/reset', page)).headers.get('Location')).toBe('/host?done=reset')
+    expect(await allPlayers()).toEqual([])
+    expect(await getPhase(db)).toBe('lobby')
+  })
+
+  it('does nothing from a stale confirm page: a join, a removal or a phase change since', async () => {
     const changes: ((first: { id: number }) => Promise<unknown>)[] = [
       () => addPlayer('Player C'),
       (first) => post(`/host/players/${first.id}/remove`),
       () => setPhase('game_on'),
-      () => reset(),
     ]
     for (const change of changes) {
       await resetDb()

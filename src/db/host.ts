@@ -160,12 +160,15 @@ export type GameMarker = Awaited<ReturnType<typeof gameMarker>>
  * holding an old player's cookie is logged out, not taken for a new player.
  *
  * Returns false, changing nothing, if the game has moved on since `seen` was
- * read for the confirm page (a stale tab or the Back button, perhaps during a
- * later game). The check is a read just before the batch: it is there for
- * stale pages, not for a join in the same few milliseconds.
+ * read for the confirm page (an old tab, or a page the browser shows again
+ * without reloading it, perhaps during a later game). The check is a read just
+ * before the batch: it is there for stale pages, not for a join in the same
+ * few milliseconds. A game that is already an empty Lobby counts as reset, so
+ * a double tap doesn't report the first tap's reset as refused.
  */
 export const resetGame = async (db: Db, seen: GameMarker) => {
   const now = await gameMarker(db)
+  if (now.phase === 'lobby' && now.playerCount === 0) return true
   if (now.phase !== seen.phase || now.lastPlayerId !== seen.lastPlayerId || now.playerCount !== seen.playerCount) {
     return false
   }

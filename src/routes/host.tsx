@@ -364,7 +364,8 @@ host.get('/host/qr', (c) => {
 // ---- Reset the game ----
 
 // The confirm page carries where the game was when it was opened, so a stale
-// page (an old tab, the Back button) can't wipe a game that has moved on.
+// page (an old tab, or one the browser shows again without reloading) can't
+// wipe a game that has moved on.
 host.get('/host/reset', async (c) => {
   const seen = await gameMarker(createDb(c.env.DB))
   return c.render(
@@ -374,9 +375,9 @@ host.get('/host/reset', async (c) => {
       </p>
       <h1>Reset the game?</h1>
       <p>
-        Every player and every accusation is deleted, and the game goes back to the Lobby. Everyone's phone goes back
-        to the join screen, and players join again with a name and PIN, as new players. The host password stays the
-        same.
+        Every player and every accusation is deleted, and the game goes back to the Lobby. Phones go back to the join
+        screen when their screen next updates (a phone on the results screen, when it is next tapped or reloaded), and
+        players join again with a name and PIN, as new players. The host password stays the same.
       </p>
       <p>
         <strong>This can't be undone.</strong>
