@@ -1,0 +1,46 @@
+# Log: phase 1, unit 02: Data and content
+
+Plan: [docs/phase-1-foundation/02-data-and-content.md](../../docs/phase-1-foundation/02-data-and-content.md)
+
+## 2026-10-07: Plan written
+
+**Done**
+- Wrote the plan from `docs/phases.md` (unit 1.02), `docs/scope.md` and the 1.01 conventions.
+
+**Worked**
+- Nothing to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Recorded below with the build, since the plan was written and built in one session.
+
+## 2026-10-07: Build
+
+**Done**
+- Content: `src/content/test.json`, `src/content/real.json` and the loader `src/content/index.ts`. The real file was converted from Danny's text file by a throwaway script that also checked each hint's name matches its challenge's, and applied the two fixes from `docs/scope.md`. A second check confirmed every other string in the file appears word for word in Danny's original.
+- Phase rules: `src/game/phases.ts`. Player name key: `src/game/names.ts`.
+- Schema: `src/db/schema.ts` (`game`, `players`, `accusations`), `migrations/0000_init.sql` (generated) and `migrations/0001_seed_game.sql` (custom, the game row), `getPhase` in `src/db/game.ts`. Removed `migrations/.gitkeep`, now that the folder has files.
+- Tests: `test/content.test.ts`, `test/phases.test.ts`, `test/schema.test.ts`, and `test/reset-db.ts` for clearing the database between tests.
+
+**Worked**
+- D1 enforces foreign keys, so `ON DELETE CASCADE` removes a removed player's accusations without any code.
+- `drizzle-kit generate --custom` makes an empty migration in the journal for the seed row; a second `db:generate` reports no changes.
+
+**Didn't work**
+- The schema tests first assumed each test gets fresh storage, as the old `@cloudflare/vitest-pool-workers` did. The new plugin isolates storage per test file only (checked with two probe files): tests in one file share it. Added `resetDb()` for `beforeEach`.
+
+**Decisions**
+- Content as JSON files, checked with Zod when first loaded. Why: the tech-stack choice was "content as a JSON file in the repo", JSON is easy for Danny to edit on GitHub, and the check turns a bad edit into a failing test rather than a broken screen.
+- Each hint is stored on its challenge rather than in a third list. Why: the scope pairs every hint with one challenge by name, so storing them together makes "matching names" true by construction.
+- `loadContent` throws on a `CONTENT_SET` other than `test` or `real`, including different capitals. Why: a typo in the setting should fail loudly, not quietly show one set or the other.
+- The game is a single row (id 1), seeded by a migration. Why: there is only ever one game (multiple games are out of scope), and seeding means every reader can rely on the row being there.
+- `players.id` uses AUTOINCREMENT. Why: without it SQLite can give a removed player's id to the next player to join, and a phone still holding the removed player's signed cookie would then be logged in as the new player.
+- Names are unique through a `name_key` column filled by `nameKey()` in JavaScript, not `COLLATE NOCASE`. Why: SQLite's case folding only covers A to Z, so names with accented capitals would otherwise not count as the same.
+- The PIN hash and salt are separate columns. Why: clearer than packing them in one string; unit 3.01 fills them.
+- Check constraints keep phases, challenge and decoy numbers (1 to 20) and self-accusation out of the database, as well as the code. Why: they are free, and they catch a bug in a later unit at the write rather than at the reveal.
+- The host can fix a completion in Game on, Accusations closed and Reveal. Why: the scope lets the host override completions and says they can still fix them once accusations close; allowing it at the Reveal too lets a late correction fix the scores, and there is nothing left to spoil by then.
+- Phase changes: each phase to the next, plus Accusations closed back to Game on. Why: the scope has the host move phases by hand, and closing accusations by mistake is the likeliest slip on the night; reopening it loses nothing. Game on can't go back to the Lobby, because assignment never changes once made, and the Reveal is final, because everything is public from then on.
+- Joining is allowed in Lobby and Game on only; rejoining in every phase. Why: the scope allows late joiners during Game on; a player who switches phones after accusations close still needs to get back in to see the reveal.
+- `getPhase` is here; changing the phase is left to unit 3.04. Why: every screen reads the phase, but only the host page changes it, together with assigning the lobby.

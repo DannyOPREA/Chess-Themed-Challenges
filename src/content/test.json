@@ -1,0 +1,186 @@
+{
+  "challenges": [
+    {
+      "name": "Challenge 1",
+      "description": "Description of Challenge 1",
+      "hint": "Hint for Challenge 1"
+    },
+    {
+      "name": "Challenge 2",
+      "description": "Description of Challenge 2",
+      "hint": "Hint for Challenge 2"
+    },
+    {
+      "name": "Challenge 3",
+      "description": "Description of Challenge 3",
+      "hint": "Hint for Challenge 3"
+    },
+    {
+      "name": "Challenge 4",
+      "description": "Description of Challenge 4",
+      "hint": "Hint for Challenge 4"
+    },
+    {
+      "name": "Challenge 5",
+      "description": "Description of Challenge 5",
+      "hint": "Hint for Challenge 5"
+    },
+    {
+      "name": "Challenge 6",
+      "description": "Description of Challenge 6",
+      "hint": "Hint for Challenge 6"
+    },
+    {
+      "name": "Challenge 7",
+      "description": "Description of Challenge 7",
+      "hint": "Hint for Challenge 7"
+    },
+    {
+      "name": "Challenge 8",
+      "description": "Description of Challenge 8",
+      "hint": "Hint for Challenge 8"
+    },
+    {
+      "name": "Challenge 9",
+      "description": "Description of Challenge 9",
+      "hint": "Hint for Challenge 9"
+    },
+    {
+      "name": "Challenge 10",
+      "description": "Description of Challenge 10",
+      "hint": "Hint for Challenge 10"
+    },
+    {
+      "name": "Challenge 11",
+      "description": "Description of Challenge 11",
+      "hint": "Hint for Challenge 11"
+    },
+    {
+      "name": "Challenge 12",
+      "description": "Description of Challenge 12",
+      "hint": "Hint for Challenge 12"
+    },
+    {
+      "name": "Challenge 13",
+      "description": "Description of Challenge 13",
+      "hint": "Hint for Challenge 13"
+    },
+    {
+      "name": "Challenge 14",
+      "description": "Description of Challenge 14",
+      "hint": "Hint for Challenge 14"
+    },
+    {
+      "name": "Challenge 15",
+      "description": "Description of Challenge 15",
+      "hint": "Hint for Challenge 15"
+    },
+    {
+      "name": "Challenge 16",
+      "description": "Description of Challenge 16",
+      "hint": "Hint for Challenge 16"
+    },
+    {
+      "name": "Challenge 17",
+      "description": "Description of Challenge 17",
+      "hint": "Hint for Challenge 17"
+    },
+    {
+      "name": "Challenge 18",
+      "description": "Description of Challenge 18",
+      "hint": "Hint for Challenge 18"
+    },
+    {
+      "name": "Challenge 19",
+      "description": "Description of Challenge 19",
+      "hint": "Hint for Challenge 19"
+    },
+    {
+      "name": "Challenge 20",
+      "description": "Description of Challenge 20",
+      "hint": "Hint for Challenge 20"
+    }
+  ],
+  "decoys": [
+    {
+      "name": "Decoy 1",
+      "description": "Description of Decoy 1"
+    },
+    {
+      "name": "Decoy 2",
+      "description": "Description of Decoy 2"
+    },
+    {
+      "name": "Decoy 3",
+      "description": "Description of Decoy 3"
+    },
+    {
+      "name": "Decoy 4",
+      "description": "Description of Decoy 4"
+    },
+    {
+      "name": "Decoy 5",
+      "description": "Description of Decoy 5"
+    },
+    {
+      "name": "Decoy 6",
+      "description": "Description of Decoy 6"
+    },
+    {
+      "name": "Decoy 7",
+      "description": "Description of Decoy 7"
+    },
+    {
+      "name": "Decoy 8",
+      "description": "Description of Decoy 8"
+    },
+    {
+      "name": "Decoy 9",
+      "description": "Description of Decoy 9"
+    },
+    {
+      "name": "Decoy 10",
+      "description": "Description of Decoy 10"
+    },
+    {
+      "name": "Decoy 11",
+      "description": "Description of Decoy 11"
+    },
+    {
+      "name": "Decoy 12",
+      "description": "Description of Decoy 12"
+    },
+    {
+      "name": "Decoy 13",
+      "description": "Description of Decoy 13"
+    },
+    {
+      "name": "Decoy 14",
+      "description": "Description of Decoy 14"
+    },
+    {
+      "name": "Decoy 15",
+      "description": "Description of Decoy 15"
+    },
+    {
+      "name": "Decoy 16",
+      "description": "Description of Decoy 16"
+    },
+    {
+      "name": "Decoy 17",
+      "description": "Description of Decoy 17"
+    },
+    {
+      "name": "Decoy 18",
+      "description": "Description of Decoy 18"
+    },
+    {
+      "name": "Decoy 19",
+      "description": "Description of Decoy 19"
+    },
+    {
+      "name": "Decoy 20",
+      "description": "Description of Decoy 20"
+    }
+  ]
+}
