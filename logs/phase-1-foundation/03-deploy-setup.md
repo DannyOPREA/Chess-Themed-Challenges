@@ -61,3 +61,18 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 - Unit reviewer, Should fix: the preview builds reason (above), plus the dashboard path to turn them off in case the connect dialog doesn't show it. Both fixed in `README.md` and the plan.
 - Unit reviewer, notes taken: step 2 mentions choosing a `workers.dev` subdomain on a new account, step 6 says how to check the first deploy, and the secrets part warns that changing `COOKIE_SECRET` logs every player out. Why: each saves Danny a question for one sentence.
 - Unit reviewer, note left: a migration whose result reports failure without throwing would let the deploy go ahead. Why: remote D1 errors throw through Wrangler's API calls, so the reviewer judged it can't happen in practice, and guarding against it would mean custom code around Wrangler.
+
+## 2026-10-07: Second unit review
+
+**Done**
+- Ran the `unit-reviewer` agent again on the fixes (head 21b4268, with `main` and unit 2.01 merged in): Pass, nothing Blocking or Should fix. CI's `check` job was green on that commit.
+
+**Worked**
+- It confirmed the preview builds fix in the README, plan and log, and the new README text and deny rules.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Its note that the deny list still allows a few remote Wrangler commands (`d1 time-travel restore`, `kv namespace create`, `r2 bucket create`): softened the plan's wording to say the list isn't complete, and added no more rules. Why: sessions have no Cloudflare credentials, and `CLAUDE.md` rule 7 is the guard; the deny list only catches the common slips.
+- Its note that the `versions` rule also blocks read-only commands: left as it is. Why: sessions have no use for them.
