@@ -122,6 +122,13 @@ describe('who has joined', () => {
     expect(html).toContain('id="players"')
   })
 
+  it('shows only its own notices', async () => {
+    expect(await (await get('/host?done=removed')).text()).toContain('<p role="status">Player removed.</p>')
+    for (const done of ['constructor', 'toString', '<b>hi</b>']) {
+      expect(await (await get(`/host?done=${encodeURIComponent(done)}`)).text()).not.toContain('role="status"')
+    }
+  })
+
   it('says when nobody has joined', async () => {
     expect(await (await get('/host')).text()).toContain('Nobody has joined yet.')
   })
@@ -201,7 +208,7 @@ describe('changing the phase', () => {
     ] as const) {
       await setPhase(from)
       const res = await post('/host/phase', { from, to })
-      expect(res.headers.get('Location')).toBe('/host?done=phase-stale')
+      expect(res.headers.get('Location')).toBe('/host?done=phase-unchanged')
       expect(await getPhase(db)).toBe(from)
     }
   })
@@ -209,10 +216,10 @@ describe('changing the phase', () => {
   it('does nothing when the confirm page is stale (a double tap or a second tab)', async () => {
     await setPhase('game_on')
     const res = await post('/host/phase', { from: 'lobby', to: 'game_on' })
-    expect(res.headers.get('Location')).toBe('/host?done=phase-stale')
+    expect(res.headers.get('Location')).toBe('/host?done=phase-unchanged')
     expect(await getPhase(db)).toBe('game_on')
     // The confirm page for a phase that has gone by sends the host back too.
-    expect((await get('/host/phase?to=game_on')).headers.get('Location')).toBe('/host?done=phase-stale')
+    expect((await get('/host/phase?to=game_on')).headers.get('Location')).toBe('/host?done=phase-unchanged')
   })
 
   it('ignores a made-up phase', async () => {
@@ -276,6 +283,24 @@ describe('starting Game on assigns the lobby', () => {
     expect(new Set(all.map((p) => p.decoy)).size).toBe(20)
   })
 
+  it.each(['game_on', 'accusations_closed', 'reveal'] as const)(
+    'assigns nobody from a stale Game on page once the game is in %s',
+    async (phase) => {
+      // As if a second run read the lobby before this player joined, and the
+      // first run has since started the game.
+      await setPhase(phase)
+      await addPlayer('Player A')
+      expect(await changePhase(db, 'lobby', 'game_on')).toBe(false)
+      expect((await allPlayers())[0]).toMatchObject({ challenge: null, decoy: null })
+      expect(await getPhase(db)).toBe(phase)
+    },
+  )
+
+  it('starts the game with an empty lobby', async () => {
+    expect(await changePhase(db, 'lobby', 'game_on')).toBe(true)
+    expect(await getPhase(db)).toBe('game_on')
+  })
+
   it('does not assign anyone on the other phase changes', async () => {
     await setPhase('game_on')
     await addPlayer('Player A')
@@ -320,6 +345,14 @@ describe("fixing a player's completion", () => {
     const res = await mark(player.id, true)
     expect(res.headers.get('Location')).toBe(`/host/players/${player.id}?done=completion-refused`)
     expect((await allPlayers())[0]?.completed).toBe(false)
+  })
+
+  it('explains a player left without a challenge during the game', async () => {
+    await setPhase('game_on')
+    const player = await addPlayer('Player A')
+    const html = await (await get(`/host/players/${player.id}`)).text()
+    expect(html).toContain('This player has no challenge yet')
+    expect(html).not.toContain('once the game is on')
   })
 
   it('sends the host back to the list for a removed player', async () => {

@@ -1,7 +1,7 @@
-import { and, asc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { hashPin } from '../auth/pin'
 import { assignPlayers, type RandomSource } from '../game/assignment'
-import { canChangePhase, type Phase } from '../game/phases'
+import { canChangePhase, PHASES, type Phase, phaseAllows } from '../game/phases'
 import type { Db } from './client'
 import { game, players } from './schema'
 
@@ -9,6 +9,10 @@ import { game, players } from './schema'
 
 // Whether a player has been given their challenge and decoy, without either.
 const assigned = sql<boolean>`${players.challenge} is not null`.mapWith(Boolean)
+
+// The game's current phase, inside another statement, so a write can be
+// guarded on the phase at the moment it runs rather than when it was read.
+const currentPhase = sql`(select ${game.phase} from ${game} where ${game.id} = 1)`
 
 /** Who has joined, in joining order, without anything that could spoil the game. */
 export const listPlayers = (db: Db) =>
@@ -52,11 +56,12 @@ export const listPlayersWithSecrets = (db: Db) =>
  *
  * Starting Game on also assigns everyone in the lobby, in the same D1 batch
  * (one transaction) as the phase change, so a phone that sees Game on also
- * sees every lobby player's numbers. Each write is guarded: the phase only
- * moves if it is still `from`, and a player is only assigned if they still
- * have no numbers, so two runs at once can't mix their picks. Anyone who joins
- * between the read and the batch is left without numbers in Game on; the join
- * screen (unit 3.01) assigns such players.
+ * sees every lobby player's numbers. The assignments run first, each guarded
+ * on the game still being in `from` and the player still having no numbers,
+ * then the guarded phase move: a run that loses a race (a double tap, a stale
+ * tab) writes nothing at all, so two runs can't mix their picks. Anyone who
+ * joins between the read and the batch is left without numbers in Game on;
+ * the join screen (unit 3.01) assigns such players.
  */
 export const changePhase = async (
   db: Db,
@@ -80,21 +85,35 @@ export const changePhase = async (
     db
       .update(players)
       .set({ challenge: p.challenge, decoy: p.decoy })
-      .where(and(eq(players.id, p.id), isNull(players.challenge), isNull(players.decoy))),
+      .where(
+        and(
+          eq(players.id, p.id),
+          isNull(players.challenge),
+          isNull(players.decoy),
+          eq(currentPhase, from),
+        ),
+      ),
   )
-  const [moved] = await db.batch([move, ...assignments])
-  return moved.length === 1
+  const [first, ...rest] = assignments
+  if (!first) return (await move).length === 1
+  const results = await db.batch([first, ...rest, move])
+  return (results.at(-1) as { phase: Phase }[]).length === 1
 }
 
+// The phases in which the host can fix a completion (unit 1.02's rules).
+const COMPLETION_PHASES = PHASES.filter((p) => phaseAllows(p, 'hostMarkCompletion'))
+
 /**
- * Marks or unmarks a player's completion. Returns false if the player is gone
- * or has no challenge yet (the database refuses completing an unassigned player).
+ * Marks or unmarks a player's completion. Returns false, changing nothing, if
+ * the player is gone, has no challenge yet, or the phase doesn't allow it at
+ * the moment of the write (a page loaded before the Reveal can't change a
+ * completion after it).
  */
 export const setCompletion = async (db: Db, id: number, completed: boolean) => {
   const rows = await db
     .update(players)
     .set({ completed })
-    .where(and(eq(players.id, id), isNotNull(players.challenge)))
+    .where(and(eq(players.id, id), isNotNull(players.challenge), inArray(currentPhase, COMPLETION_PHASES)))
     .returning({ id: players.id })
   return rows.length === 1
 }

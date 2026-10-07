@@ -42,3 +42,24 @@ Plan: [docs/phase-3-screens/04-host-page.md](../../docs/phase-3-screens/04-host-
 - After each action the page says what happened (`?done=<key>` from a fixed list of messages). Why: plain redirects keep the back button and a refresh from repeating the action, and a fixed list means nothing from the URL is ever shown as it is.
 - Host pages are `Cache-Control: no-store`. Why: they show completions and, with "show all", everything; nothing should stay in a phone's cache or back button.
 - The QR code is the site's own address plus `/`, taken from the request. Why: the live address depends on Danny's `workers.dev` subdomain, which the code can't know; the request has it.
+
+## 2026-10-07: Code review
+
+**Done**
+- Ran `/code-review` at `high` on the branch's diff against `main`. Seven findings, all fixed:
+  1. The Game on batch wrote the assignments even when its phase move matched nothing, so the losing run of a race (or a stale confirm page posted later in the game) could still assign a player who joined after the winner's read, possibly with a number someone already held. Fixed: the assignments now run before the phase move in the batch, each guarded on the game still being in `from`, so a losing run writes nothing. Tested for a stale run in Game on, Accusations closed and Reveal; the tests fail with the guard removed.
+  2. The completion route read the phase and wrote the completion in separate queries, so a page loaded before the Reveal could change a completion after it. Fixed: `setCompletion` guards the write on the phase at that moment (the phases `phaseAllows(..., 'hostMarkCompletion')` lists). The route's separate check is gone; the Lobby and Reveal tests now exercise the guarded write and fail without it.
+  3. An unassigned player's page said "Completion can be set once the game is on" during the game. Fixed: during the game it says the player has no challenge yet. Tested.
+  4. Asking for a phase that isn't next said "The phase had already changed", which can be untrue. Fixed: one honest message for both cases, as the server can't tell a skipped phase from a stale page.
+  5. `?done=constructor` passed the `in` check and showed an empty notice. Fixed with `Object.hasOwn`. Tested.
+  6. `basicAuth` was registered for `/host` and `/host/*`, but Hono's `/host/*` also matches `/host`, so it ran twice there. Fixed: one registration; the login tests still cover `/host`.
+  7. `src/auth/pin.ts` wrote its own hex conversion, digest and constant-time compare (rule 1). Fixed: it uses Hono's `sha256` and `timingSafeEqual`, and `crypto.randomUUID()` for the salt. The new content went to the 3.01 thread.
+
+**Worked**
+- Typecheck and 169 tests pass.
+
+**Didn't work**
+- Drizzle's `db.batch` needs a first element its types can see, so `[...assignments, move]` didn't typecheck. The first assignment is taken out (`[first, ...rest, move]`), and an empty lobby moves the phase on its own.
+
+**Decisions**
+- Guard writes on the phase inside the SQL (a subquery on the game row) rather than reading it first. Why: D1 runs each statement atomically, so the guard holds at the moment of the write; a read-then-write leaves a gap a second tab or a double tap can fall into.

@@ -27,34 +27,32 @@ import { PHASE_LABELS, type Phase, phaseAllows, phaseChangesFrom, phaseSchema } 
 // undone (a phase change, removing a player, show all) has a confirm step.
 export const host = new Hono<AppEnv>()
 
-host.use('/host', ...hostGuards())
-host.use('/host/*', ...hostGuards())
-
-function hostGuards() {
-  return [
-    basicAuth({
+// `/host/*` also matches `/host` itself.
+host.use(
+  '/host/*',
+  basicAuth({
       realm: 'Chess pub crawl host',
       // Any user name; only the password counts, so there's one less thing to
       // remember on the night. An unset password locks the page rather than
       // opening it.
-      verifyUser: async (_user, password, c: Context<AppEnv>) => {
-        const expected = c.env.HOST_PASSWORD
-        return !!expected && (await timingSafeEqual(password, expected))
-      },
-    }),
-    // Host pages can show completions, or with "show all" everything, so keep
-    // them out of every cache, including the phone's back button.
-    async (c: Context<AppEnv>, next: () => Promise<void>) => {
-      await next()
-      c.header('Cache-Control', 'no-store')
+    verifyUser: async (_user, password, c: Context<AppEnv>) => {
+      const expected = c.env.HOST_PASSWORD
+      return !!expected && (await timingSafeEqual(password, expected))
     },
-  ] as const
-}
+  }),
+  // Host pages can show completions, or with "show all" everything, so keep
+  // them out of every cache, including the phone's back button.
+  async (c, next) => {
+    await next()
+    c.header('Cache-Control', 'no-store')
+  },
+)
 
 // Short messages after an action, passed back in the URL as `?done=<key>`.
 const NOTICES = {
   phase: 'Phase changed.',
-  'phase-stale': 'The phase had already changed, so nothing was done. Here is where the game is now.',
+  'phase-unchanged':
+    "The phase wasn't changed: it can only move on to the next phase, and may already have moved. This page shows where the game is now.",
   removed: 'Player removed.',
   gone: 'That player has been removed.',
   pin: 'New PIN saved. Tell the player their new PIN.',
@@ -64,7 +62,7 @@ const NOTICES = {
 type NoticeKey = keyof typeof NOTICES
 
 const Notice = ({ done }: { done: string | undefined }) =>
-  done && done in NOTICES ? <p role="status">{NOTICES[done as NoticeKey]}</p> : null
+  done && Object.hasOwn(NOTICES, done) ? <p role="status">{NOTICES[done as NoticeKey]}</p> : null
 
 const idParam = zValidator('param', z.object({ id: z.coerce.number().int().positive() }), (result, c) => {
   if (!result.success) return c.notFound()
@@ -151,7 +149,7 @@ host.get('/host/phase', zValidator('query', z.object({ to: phaseSchema }), (r, c
 }), async (c) => {
   const { to } = c.req.valid('query')
   const from = await getPhase(createDb(c.env.DB))
-  if (!phaseChangesFrom(from).includes(to)) return c.redirect('/host?done=phase-stale', 303)
+  if (!phaseChangesFrom(from).includes(to)) return c.redirect('/host?done=phase-unchanged', 303)
   return c.render(
     <>
       <h1>Move to {PHASE_LABELS[to]}?</h1>
@@ -177,7 +175,7 @@ host.post('/host/phase', zValidator('form', z.object({ from: phaseSchema, to: ph
 }), async (c) => {
   const { from, to } = c.req.valid('form')
   const changed = await changePhase(createDb(c.env.DB), from, to)
-  return c.redirect(changed ? '/host?done=phase' : '/host?done=phase-stale', 303)
+  return c.redirect(changed ? '/host?done=phase' : '/host?done=phase-unchanged', 303)
 })
 
 // ---- One player ----
@@ -198,7 +196,11 @@ host.get('/host/players/:id', idParam, async (c) => {
       <section>
         <h2>Challenge done?</h2>
         {!player.assigned ? (
-          <p>No challenge yet. Completion can be set once the game is on.</p>
+          <p>
+            {phase === 'lobby'
+              ? 'No challenge yet. Completion can be set once the game is on.'
+              : 'This player has no challenge yet, so there is no completion to set.'}
+          </p>
         ) : (
           <p>{player.completed ? 'Marked done.' : 'Not marked done.'}</p>
         )}
@@ -257,9 +259,7 @@ host.post(
     const { id } = c.req.valid('param')
     const completed = c.req.valid('form').completed === 'true'
     const db = createDb(c.env.DB)
-    if (!phaseAllows(await getPhase(db), 'hostMarkCompletion')) {
-      return c.redirect(`/host/players/${id}?done=completion-refused`, 303)
-    }
+    // setCompletion checks the phase and the player's challenge as it writes.
     const saved = await setCompletion(db, id, completed)
     if (saved) return c.redirect(`/host/players/${id}?done=completion`, 303)
     const exists = await getPlayer(db, id)
