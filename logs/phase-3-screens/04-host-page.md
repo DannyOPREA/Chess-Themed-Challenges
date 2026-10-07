@@ -100,3 +100,18 @@ Plan: [docs/phase-3-screens/04-host-page.md](../../docs/phase-3-screens/04-host-
 
 **Decisions**
 - None beyond the fixes above.
+
+## 2026-10-07: Second unit review and merge
+
+**Done**
+- Ran the `unit-reviewer` again on the fixes. Verdict "Pass", nothing Blocking or Should fix. It confirmed the player buttons (358 × 50 px at 390 px wide, long names wrap without overflow), the boxed notices, the 10-second poll, the guarded completion write after a stale Reveal tap, and no spoilers in any host response outside the confirmed "show all" page.
+- `main` hadn't moved since the branch was cut (unit 3.01 not merged yet), so there was nothing to merge in. Set the plan's status to Done and merged the PR with a merge commit.
+
+**Worked**
+- Typecheck and 170 tests pass; CI's `check` job green.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- None. Carried over for 3.01: anyone left without numbers by the join race is assigned by 3.01, and whichever of 3.01 and this unit merges second keeps `main`'s `src/auth/pin.ts` body (the exports match).

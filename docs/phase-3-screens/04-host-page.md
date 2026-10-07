@@ -1,6 +1,6 @@
 # Phase 3, unit 04: Host page
 
-- Status: In progress
+- Status: Done
 - Log: [logs/phase-3-screens/04-host-page.md](../../logs/phase-3-screens/04-host-page.md)
 - Depends on: 1.02 Data and content, 2.02 Assignment
 
