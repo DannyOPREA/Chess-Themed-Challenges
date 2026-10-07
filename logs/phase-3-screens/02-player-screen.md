@@ -81,3 +81,23 @@ Plan: [docs/phase-3-screens/02-player-screen.md](../../docs/phase-3-screens/02-p
 - Note: a poll and a tap could cross. Fixed: the form has `hx-sync="closest section:replace"`, so a tap cancels a poll in flight on the status section.
 - Note: the Game on poll test sets the numbers in the database rather than through the host's assignment. Not changed. Why: the host's assignment and `ensureAssigned` have their own tests (3.04, 3.01); this test is about the poll picking up the change.
 - Ran the reviewer again on the final branch, because the code changed after its first run (next entry).
+
+## 2026-10-07: Second unit review, and main merged in
+
+**Done**
+- Merged `main` (unit 3.05 Reveal, PR #15) into the branch. No conflicts: this unit doesn't touch `src/index.ts`. Typecheck and 261 tests pass.
+- Ran the `unit-reviewer` again on the final code. Verdict "Pass", nothing Blocking or Should fix. It checked that the shared phase guard makes 3.01's and 3.04's writes send exactly the same SQL as before (recorded statements from main and from the branch were byte-identical), played six players through every phase with a tap racing a poll and a slow tap, saw every open screen move to `/reveal` when the Reveal started and a later visit to `/play` stay put, and found no other player's details in 152 saved responses.
+- Acted on its notes (below). Status set to Done.
+
+**Worked**
+- `hx-sync` behaved as intended in the browser: a tap cancelled a poll in flight, and no poll was sent while a slow tap was in flight.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Note: the plan status and this entry. Done here.
+- Note: `hx-sync` had no test. Added an assertion beside the poll's attributes.
+- Note: a stray blank line in `src/db/host.ts`. Removed.
+- Note: htmx logs a console error when `hx-sync` cancels a request. Not changed. Why: players never see it, nothing breaks, and it is htmx's own logging of an abort it was asked to make.
+- Note: after a refused plain-form post, reloading `/play?done=refused` shows the notice again until the next poll. Not changed. Why: only phones without JavaScript take that path, and the notice is still true (the game is past Game on).

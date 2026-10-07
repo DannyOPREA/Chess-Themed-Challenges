@@ -1,6 +1,6 @@
 # Phase 3, unit 02: Player screen
 
-- Status: In progress
+- Status: Done
 - Log: [logs/phase-3-screens/02-player-screen.md](../../logs/phase-3-screens/02-player-screen.md)
 - Depends on: 3.01 Join and rejoin
 
@@ -45,7 +45,7 @@ The player's home screen at `/play`, where players land after joining: their own
 - `Cache-Control: no-store` on the page and the poll, and the `pageshow` reload script (with no Content-Security-Policy to block it).
 - "I've done it" and undo from a plain form and from htmx (a fragment, not a page); a double tap; it doesn't touch another player's completion; refused in Lobby, Accusations closed and Reveal, including from a screen loaded in Game on, with the notice, which the next poll clears; a tampered form, by plain post and by htmx; a phone not logged in; the host's override shows.
 - `setOwnCompletion` in each phase, for an unassigned player, and for a missing player.
-- The poll: its attributes; 204 while unchanged; the new section when the phase changes, when the host changes the completion, and when Game on assigns the challenge; `HX-Redirect: /reveal` once when the Reveal starts, and not again; `HX-Redirect` for a removed player.
+- The poll: its attributes, and the form's `hx-sync`; 204 while unchanged; the new section when the phase changes, when the host changes the completion, and when Game on assigns the challenge; `HX-Redirect: /reveal` once when the Reveal starts, and not again; `HX-Redirect` for a removed player.
 
 ## Done when
 
@@ -54,5 +54,5 @@ The player's home screen at `/play`, where players land after joining: their own
 
 ## Not in this unit
 
-- The accusations screen at `/accuse` (3.03) and the reveal at `/reveal` (3.05). This screen only links to them; until those units merge, the links give the 404 page.
+- The accusations screen at `/accuse` (3.03) and the reveal at `/reveal` (3.05). This screen only links to them; 3.05 merged first; until 3.03 merges, the accusations link gives the 404 page.
 - Host completion overrides (3.04, done).

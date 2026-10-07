@@ -313,6 +313,8 @@ describe('the 10-second poll', () => {
     expect(html).toContain(
       '<section id="status" hx-get="/play/status?seen=game_on-1-0" hx-trigger="every 10s" hx-swap="outerHTML">',
     )
+    // A tap cancels a poll in flight, so an older poll answer can't land after it.
+    expect(html).toContain('hx-sync="closest section:replace"')
   })
 
   it('answers 204, so nothing is redrawn, while nothing has changed', async () => {

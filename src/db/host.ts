@@ -11,7 +11,6 @@ import { game, players } from './schema'
 // Whether a player has been given their challenge and decoy, without either.
 const assigned = sql<boolean>`${players.challenge} is not null`.mapWith(Boolean)
 
-
 /** Who has joined, in joining order, without anything that could spoil the game. */
 export const listPlayers = (db: Db) =>
   db
