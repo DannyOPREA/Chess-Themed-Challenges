@@ -1,6 +1,6 @@
 # Phase 1, unit 03: Deploy setup
 
-- Status: In progress
+- Status: Done
 - Log: [logs/phase-1-foundation/03-deploy-setup.md](../../logs/phase-1-foundation/03-deploy-setup.md)
 - Depends on: 1.01
 

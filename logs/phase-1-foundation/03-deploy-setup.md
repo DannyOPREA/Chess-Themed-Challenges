@@ -201,3 +201,19 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 
 **Decisions**
 - Left as they are, from its notes: under dash the length counts bytes, so a non-breaking space shows as two extra characters (the warning still fires), and the deny list doesn't cover forms such as `dash scripts/deploy.sh`. Why: neither changes what the build does, and the plan already says rule 7 is the real guard.
+
+## 2026-10-07: First successful deploy
+
+**Done**
+- Danny deleted the `DEPLOY_API_TOKEN` build secret and retried the build of the PR #19 merge commit (462237d). The Workers Build passed at 22:09 UTC.
+- Checked through the Cloudflare connector, read-only: `chess-crawl` now has the `game`, `players` and `accusations` tables and the `players_assignment_final` trigger, and `d1_migrations` lists `0000_init.sql`, `0001_seed_game.sql` and `0002_assignment_final.sql`, all applied at 22:08-22:09 UTC.
+- Plan status set to Done: a Workers Build on `main` has applied the migrations and deployed the app.
+
+**Worked**
+- The token Workers Builds creates can apply D1 migrations and deploy with a D1 binding, even though the dashboard only offered D1 Read when Danny tried to edit it. So step 5 of the README checklist (a custom token) wasn't needed after all.
+
+**Didn't work**
+- Nothing in this step. Why the custom token was refused stays unknown; it no longer matters.
+
+**Decisions**
+- Kept `DEPLOY_API_TOKEN` support and README step 5 as a fallback. Why: they cost nothing while the secret is unset, and they are the documented way out if the build token ever loses D1 access.
