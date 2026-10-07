@@ -1,5 +1,6 @@
 import { zValidator } from '@hono/zod-validator'
 import { type Context, Hono } from 'hono'
+import { raw } from 'hono/html'
 import { z } from 'zod'
 import { type PlayerEnv, requirePlayer } from '../auth/session'
 import { type Content, getChallenge, getDecoy, loadContent } from '../content'
@@ -28,9 +29,11 @@ type Notice = 'refused'
 
 // What the status section shows changes only with these. The 10-second poll
 // sends the key it last saw and gets "204 No Content" (which htmx doesn't
-// swap) while it still matches, so an unchanged screen isn't redrawn.
-const stateKey = (phase: Phase, player: Player) =>
-  `${phase}-${player.challenge === null ? 0 : 1}-${player.completed ? 1 : 0}`
+// swap) while it still matches, so an unchanged screen isn't redrawn. A
+// section showing a notice has a key no poll matches, so the next poll clears
+// the notice.
+const stateKey = (phase: Phase, player: Player, notice?: Notice) =>
+  `${phase}-${player.challenge === null ? 0 : 1}-${player.completed ? 1 : 0}${notice ? `-${notice}` : ''}`
 
 const Completion = ({ phase, completed }: { phase: Phase; completed: boolean }) => (
   <footer>
@@ -57,6 +60,42 @@ const Completion = ({ phase, completed }: { phase: Phase; completed: boolean }) 
   </footer>
 )
 
+// The player's own challenge and decoy, with descriptions.
+const Secrets = ({
+  phase,
+  completed,
+  challenge,
+  decoy,
+  content,
+}: {
+  phase: Phase
+  completed: boolean
+  challenge: number
+  decoy: number
+  content: Content
+}) => {
+  const { name, description } = getChallenge(content, challenge)
+  const theDecoy = getDecoy(content, decoy)
+  return (
+    <>
+      <article>
+        <header>Your secret challenge</header>
+        <h3>{name}</h3>
+        <p>{description}</p>
+        <Completion phase={phase} completed={completed} />
+      </article>
+      <article>
+        <header>Your decoy (optional)</header>
+        <h3>{theDecoy.name}</h3>
+        <p>{theDecoy.description}</p>
+        <footer>
+          <small>Use it to throw others off your scent. It doesn't affect your score.</small>
+        </footer>
+      </article>
+    </>
+  )
+}
+
 const Status = ({
   phase,
   player,
@@ -70,7 +109,7 @@ const Status = ({
 }) => (
   <section
     id="status"
-    hx-get={`/play/status?seen=${stateKey(phase, player)}`}
+    hx-get={`/play/status?seen=${stateKey(phase, player, notice)}`}
     hx-trigger="every 10s"
     hx-swap="outerHTML"
   >
@@ -94,22 +133,7 @@ const Status = ({
           : "You weren't given a challenge before accusations closed, so you have nothing to complete."}
       </p>
     ) : (
-      <>
-        <article>
-          <header>Your secret challenge</header>
-          <h3>{getChallenge(content, player.challenge).name}</h3>
-          <p>{getChallenge(content, player.challenge).description}</p>
-          <Completion phase={phase} completed={player.completed} />
-        </article>
-        <article>
-          <header>Your decoy (optional)</header>
-          <h3>{getDecoy(content, player.decoy).name}</h3>
-          <p>{getDecoy(content, player.decoy).description}</p>
-          <footer>
-            <small>Use it to throw others off your scent. It doesn't affect your score.</small>
-          </footer>
-        </article>
-      </>
+      <Secrets phase={phase} completed={player.completed} challenge={player.challenge} decoy={player.decoy} content={content} />
     )}
     {/* Links to the accusation (3.03) and reveal (3.05) screens. */}
     {phase === 'game_on' ? (
@@ -168,6 +192,10 @@ play.get('/play', async (c) => {
           Not {player.name}? Log out
         </button>
       </form>
+      {/* Some phone browsers keep a page in memory despite no-store and show
+          it again on Back, after logging out on a borrowed phone. Reload it
+          instead, which sends a logged-out phone to the join page. */}
+      <script>{raw("addEventListener('pageshow', (e) => { if (e.persisted) location.reload() })")}</script>
     </>,
     { title: 'Chess pub crawl' },
   )
@@ -195,8 +223,9 @@ const afterCompletion = async (c: Context<PlayerEnv>, player: Player, notice?: N
 play.post(
   '/play/done',
   // Only a tampered form fails this; the screen's own buttons always pass.
+  // Nothing changes: htmx gets nothing to swap, a plain post the screen.
   zValidator('form', z.object({ completed: z.enum(['true', 'false']) }), (r, c) => {
-    if (!r.success) return c.redirect('/play', 303)
+    if (!r.success) return c.req.header('HX-Request') ? c.body(null, 204) : c.redirect('/play', 303)
   }),
   async (c) => {
     const player = c.var.player

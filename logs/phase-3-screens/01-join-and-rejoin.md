@@ -89,3 +89,17 @@ Plan: [docs/phase-3-screens/01-join-and-rejoin.md](../../docs/phase-3-screens/01
 - Note: the zero-width joiner now also stays after a skin-tone modifier, with a test. Why: iPhones produce these often. Tag-sequence flags (such as England's) still lose their tag characters and show as a plain flag. Why not fixed: cosmetic, rejoining still works, and allowing tag characters would let invisible characters back into names.
 - Note: a wrong PIN once accusations close now says "That PIN doesn't match that name. Check your PIN, or ask the host to reset it." Why: the usual advice to choose a different name doesn't help when new names can't join.
 - Merge with a merge commit once CI's `check` job is green. Why: the working agreement.
+
+## 2026-10-07: Shared phase guard (from unit 3.02)
+
+**Done**
+- Unit 3.02 moved the "phase at the moment of the write" subquery into `src/db/game.ts` as `currentPhase` and `currentPhaseAllows(action)`, and this unit's `src/db/` file now imports it instead of keeping its own copy. The SQL each write runs is the same; this unit's tests pass unchanged.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- One shared copy. Why: `/code-review` on 3.02 found three private copies of the same guard; one place to change if the game row changes.

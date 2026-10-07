@@ -25,3 +25,23 @@ Plan: [docs/phase-3-screens/02-player-screen.md](../../docs/phase-3-screens/02-p
 - `Cache-Control: no-store` on every player route. Why: the page shows the secret challenge; after "Log out" on a borrowed phone, the back button mustn't show it from the cache.
 - The hint list is in content order and doesn't mark the player's own challenge. Why: marking it adds nothing for the player and would be one more thing on screen for someone looking over their shoulder.
 - The challenge isn't hidden behind a "tap to show". Why: not in the scope, and an extra tap each time; noted for the whole-app check.
+
+## 2026-10-07: Code review
+
+**Done**
+- Ran `/code-review` at `high` on the branch and acted on its findings (below). Typecheck and 242 tests pass.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- `/code-review`: `no-store` doesn't stop Safari (and sometimes Chrome) showing the page again from the back-forward cache, so Back after logging out on a borrowed phone could show the challenge until the next poll. Fixed: a one-line `pageshow` script reloads the page when it comes from that cache; a logged-out phone then lands on the join page. The app sends no Content-Security-Policy, so the inline script runs; a test checks both.
+- `/code-review`: the "That wasn't saved" notice never cleared, because every later poll matched the key and got 204. Fixed: a section with a notice has a key no poll matches, so the next poll replaces it. Tested.
+- `/code-review`: a tampered htmx post got a redirect to `/play`, which htmx would follow and swap the whole page into the status section. Fixed: htmx gets a 204 (nothing to swap). Tested.
+- `/code-review`: `setOwnCompletion` repeats `setCompletion` from 3.04, and the "phase at the moment of the write" subquery was copied into a third file. Fixed the subquery: `currentPhase` and `currentPhaseAllows(action)` now live in `src/db/game.ts`, used by `host.ts`, `players.ts` and `play.ts` (logged in 3.01's and 3.04's logs). The two completion writes stay separate. Why: they are five lines each, differ in the phase rule, and a shared function would make the host's and the player's permissions one parameter apart.
+- `/code-review`: challenge and decoy were each looked up twice per render. Fixed with one `Secrets` component.
+- `/code-review`: a poll can read the phase twice for an unassigned player (once in `ensureAssigned`, once in the route). Not changed. Why: one extra small read per phone every 10 seconds in the Lobby is far inside D1's free plan, and avoiding it means changing 3.01's `requirePlayer` for every screen.
+- `/code-review`: showing the player their own challenge description during Game on might go against the scope's "full challenge descriptions are only shown at the reveal". Not changed, and not asked of Danny. Why: in Danny's real list the names (like "Challenge 1" in the test set) don't say what to do, so a player can't do their challenge without its description; the line sits under the hint list in the scope and is about the other 19 challenges. Only one reading makes the game playable.

@@ -170,9 +170,15 @@ describe('the player screen', () => {
     expect(html).not.toContain('/play/done')
   })
 
-  it('is never cached', async () => {
+  it('is never cached, and reloads when a browser shows it again from memory', async () => {
     const { cookie } = await samAndAlex('game_on')
-    expect((await get('/play', cookie)).headers.get('Cache-Control')).toBe('no-store')
+    const res = await get('/play', cookie)
+    expect(res.headers.get('Cache-Control')).toBe('no-store')
+    // An inline script, so no Content-Security-Policy may block inline scripts.
+    expect(res.headers.get('Content-Security-Policy')).toBeNull()
+    expect(await res.text()).toContain(
+      "<script>addEventListener('pageshow', (e) => { if (e.persisted) location.reload() })</script>",
+    )
     expect((await get('/play/status', cookie, HTMX)).headers.get('Cache-Control')).toBe('no-store')
   })
 })
@@ -239,6 +245,11 @@ describe('"I\'ve done it"', () => {
       expect(htmx).toContain('That wasn&#39;t saved')
       expect(htmx).not.toContain('/play/done')
       expect((await getPlayer(sam.id))?.completed).toBe(false)
+
+      // The next poll clears the notice.
+      const poll = await get(`/play/status?seen=${seenKey(htmx)}`, cookie, HTMX)
+      expect(poll.status).toBe(200)
+      expect(await poll.text()).not.toContain('wasn&#39;t saved')
     }
   })
 
@@ -256,6 +267,8 @@ describe('"I\'ve done it"', () => {
       const res = await markDone(cookie, value)
       expect(res.status).toBe(303)
       expect(res.headers.get('Location')).toBe('/play')
+      // htmx gets nothing to swap, rather than a whole page inside the screen.
+      expect((await markDone(cookie, value, HTMX)).status).toBe(204)
     }
     expect((await getPlayer(sam.id))?.completed).toBe(false)
   })
