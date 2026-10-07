@@ -1,0 +1,44 @@
+# Log: phase 3, unit 04: Host page
+
+Plan: [docs/phase-3-screens/04-host-page.md](../../docs/phase-3-screens/04-host-page.md)
+
+## 2026-10-07: Plan written
+
+**Done**
+- Wrote the plan from `docs/phases.md` (unit 3.04), `docs/scope.md`, the 1.02 and 2.02 plans and logs, and the 1.01 conventions.
+
+**Worked**
+- Nothing to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Recorded below with the build, since the plan was written and built in one session.
+
+## 2026-10-07: Build
+
+**Done**
+- `src/auth/pin.ts`, `src/db/host.ts`, `src/routes/host.tsx` (registered in `src/index.ts`), `test/host.test.ts`, `test/pin.test.ts`, and a "Host page" section in `README.md`.
+- Played the pages on `npm run dev` in a 390 × 844 browser with three players: the host page, the Game on confirm and change, a player's page, marking done, the QR code and "show all". No console errors; everything fits the phone width.
+
+**Worked**
+- Typecheck and 163 tests pass.
+- Drizzle's `db.batch` runs the phase change and every lobby assignment as one D1 transaction, and `.returning()` on the guarded phase update tells whether it moved. Two `changePhase` calls at once in a test leave one phase change and 20 unique challenges and decoys.
+
+**Didn't work**
+- A test checked for "This can't be undone." in the HTML; hono/jsx escapes the apostrophe as `&#39;`. The tests match either form.
+
+**Decisions**
+- Reset PIN means the host types a new 4-digit PIN for the player and tells them. Why: the scope only says "reset a player's PIN"; clearing it so the player picks a new one would need a "no PIN yet" state in the schema (`pin_hash` is required) and in unit 3.01's rejoin flow, while a host-chosen PIN needs neither and works the moment the host says it.
+- The PIN hashing helper (`src/auth/pin.ts`) is written here and sent word for word to the 3.01 thread, which needs the same thing for joining. Why: the two units run in parallel; identical files on both branches merge without a conflict, and there is one way to hash a PIN.
+- Any user name with the right password logs in. Why: the browser's login box always asks for one, and nobody needs to remember a second word on the night; the password is the only secret. It's compared in constant time (`timingSafeEqual` from Hono), and an empty or missing `HOST_PASSWORD` keeps the page locked rather than letting an empty password in.
+- Confirm steps are server-rendered pages (`GET` shows the question, the form `POST`s), not a JavaScript `confirm()` or `hx-confirm`. Why: they work on any phone, the confirm page can say what the change does, and the posted `from` phase makes a stale page or a double tap harmless.
+- The removal and "show all" buttons get the same kind of confirm page as phase changes. Why: removing a player deletes their accusations for good, and "show all" spoils the game for Danny, who is playing.
+- Completions are shown only on each player's own page, not in the player list. Why: the host must be able to fix completions, but Danny is also a player; keeping the list free of them means a glance at the host page during the game gives nothing away.
+- "Show all" lists challenge and decoy names, not descriptions. Why: it is for sorting out a problem (for example a player who lost their challenge), and the names are enough to identify them; less on screen in an emergency.
+- Starting Game on writes the phase and the lobby's numbers in one batch, each assignment guarded on `challenge IS NULL AND decoy IS NULL` (the 2.02 plan suggested `OR`; the schema makes the two the same, since challenge and decoy are assigned together). Why: unit 2.02's plan; a phone that sees Game on then always sees the lobby's numbers too, and two runs can't mix their picks. Someone who joins between the read and the batch is left without numbers in Game on; the host list flags them and unit 3.01 assigns them (told to that thread).
+- The player list is polled as its own fragment, separate from the forms. Why: a 10-second poll that replaced the whole page would wipe a PIN being typed; the forms live on each player's page, which doesn't poll.
+- After each action the page says what happened (`?done=<key>` from a fixed list of messages). Why: plain redirects keep the back button and a refresh from repeating the action, and a fixed list means nothing from the URL is ever shown as it is.
+- Host pages are `Cache-Control: no-store`. Why: they show completions and, with "show all", everything; nothing should stay in a phone's cache or back button.
+- The QR code is the site's own address plus `/`, taken from the request. Why: the live address depends on Danny's `workers.dev` subdomain, which the code can't know; the request has it.
