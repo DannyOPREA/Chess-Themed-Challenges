@@ -148,3 +148,23 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 - Print the names of the Cloudflare variables in the build log. Why: if the next build fails too, the log shows whether Workers Builds sets something such as a custom API address, without showing any secret.
 - Brings back the fallback the code review removed in the entry before last. Why: the fail-fast check did its job; the fallback is now the main path being tested, and the new log lines say which token was used, which answers the code review's worry about a confusing error.
 - A script file instead of a longer one-liner in `package.json`. Why: it is now several steps with comments, which don't fit in JSON.
+
+## 2026-10-07: Code review of the build-token change
+
+**Done**
+- Ran `/code-review` at `high` on PR #19 and fixed its findings as below. Rechecked `scripts/deploy.sh` with a fake `wrangler`: both tokens, a secret with a space and newline around it, a secret of spaces only (falls back to the build's token), and a failing migration (stops with the step 5 hint, exit 1).
+
+**Worked**
+- Nothing more to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Whitespace is now stripped from `DEPLOY_API_TOKEN`, and a secret that is only whitespace counts as unset. Why: API tokens contain none, and the reviewer pointed out that a stray space or newline would be sent as part of the token. That may also be what made Cloudflare call the token invalid twice; the next build will show.
+- Variable names are listed from awk's `ENVIRON` keys, not by grepping `env`. Why: grepping `env` can print a line from inside a multi-line value.
+- A failed migration prints a pointer to README step 5. Why: wrangler's own auth error doesn't say what to do.
+- Sessions are also denied `sh scripts/deploy.sh`, `bash scripts/deploy.sh` and `./scripts/deploy.sh`. Why: the deploy steps now live in that file, and `npm run deploy` was the only form denied (`CLAUDE.md` rule 7).
+- README step 5 says to delete an existing `DEPLOY_API_TOKEN` to try the build's own token, and step 6 no longer says the first build fails "because step 5 wasn't done". Why: step 5 is now optional, so the old wording contradicted it.
+- The plan's status is back to In progress, its Tests list the script check, and "Done when" now needs a successful build on `main`. Why: the unit's goal, deploys on every push, isn't met yet.
+- The secret's token stays in use for `wrangler deploy` too, not only for the migrations. Why: with no `database_id`, `wrangler deploy` also looks the database up by name, which needs D1; a token without D1 would fail on the first deploy over the Hello World Worker, which has no D1 binding yet.

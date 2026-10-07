@@ -55,7 +55,10 @@
       "Bash(npx wrangler d1 create*)",
       "Bash(wrangler d1 create*)",
       "Bash(npx wrangler d1 delete*)",
-      "Bash(wrangler d1 delete*)"
+      "Bash(wrangler d1 delete*)",
+      "Bash(sh scripts/deploy.sh*)",
+      "Bash(bash scripts/deploy.sh*)",
+      "Bash(./scripts/deploy.sh*)"
     ]
   }
 }

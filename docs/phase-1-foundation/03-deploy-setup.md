@@ -1,6 +1,6 @@
 # Phase 1, unit 03: Deploy setup
 
-- Status: Done
+- Status: In progress
 - Log: [logs/phase-1-foundation/03-deploy-setup.md](../../logs/phase-1-foundation/03-deploy-setup.md)
 - Depends on: 1.01
 
@@ -29,6 +29,7 @@ Everything Cloudflare Workers Builds needs to build the app, apply D1 migrations
 ## Tests
 
 - No new automated tests: this unit adds no app code. CI's new dry-run step checks on every PR that the Worker still builds for deploying.
+- Checked by hand in the session: `scripts/deploy.sh` with a fake `wrangler` on `PATH`, with and without `DEPLOY_API_TOKEN` (including a value with spaces around it), and with a failing migration, which stops the script before `wrangler deploy` and prints the step 5 hint.
 - Checked by hand in the session: `npx wrangler build` (the same dry run) from a clean checkout, with no `public/` folder and no `.dev.vars`, succeeds and lists the `DB` and `CONTENT_SET` bindings.
 
 ## Done when
@@ -36,6 +37,7 @@ Everything Cloudflare Workers Builds needs to build the app, apply D1 migrations
 - `npm run typecheck` and `npm test` pass, locally and in CI's `check` job, which now also runs the dry-run build.
 - `README.md` has Danny's checklist, and Danny has it in the thread after the merge.
 - Nothing was deployed and no Cloudflare resource was created from a session.
+- A Workers Build on `main` has applied the migrations and deployed the app.
 
 ## Not in this unit
 
