@@ -11,6 +11,7 @@ import { createDb } from '../db/client'
 import { getPhase } from '../db/game'
 import {
   changePhase,
+  gameMarker,
   getPlayer,
   listPlayers,
   listPlayersWithSecrets,
@@ -61,7 +62,9 @@ const NOTICES = {
   pin: 'New PIN saved. Tell the player their new PIN.',
   completion: 'Completion saved.',
   'completion-refused': "Completions can't be changed right now.",
-  reset: 'Game reset. Every player and accusation has been deleted and the game is back in the Lobby.',
+  reset: 'The game was reset.',
+  'reset-unchanged':
+    "The game wasn't reset: it has changed since that page was opened. Tap Reset the game again if you still want to.",
 } as const
 type NoticeKey = keyof typeof NOTICES
 
@@ -360,8 +363,11 @@ host.get('/host/qr', (c) => {
 
 // ---- Reset the game ----
 
-host.get('/host/reset', (c) =>
-  c.render(
+// The confirm page carries where the game was when it was opened, so a stale
+// page (an old tab, the Back button) can't wipe a game that has moved on.
+host.get('/host/reset', async (c) => {
+  const seen = await gameMarker(createDb(c.env.DB))
+  return c.render(
     <>
       <p>
         <a href="/host">Back to the host page</a>
@@ -376,6 +382,9 @@ host.get('/host/reset', (c) =>
         <strong>This can't be undone.</strong>
       </p>
       <form method="post" action="/host/reset">
+        <input type="hidden" name="phase" value={seen.phase} />
+        <input type="hidden" name="lastPlayerId" value={String(seen.lastPlayerId)} />
+        <input type="hidden" name="playerCount" value={String(seen.playerCount)} />
         <button type="submit" class="contrast">
           Yes, reset the game
         </button>
@@ -385,13 +394,27 @@ host.get('/host/reset', (c) =>
       </a>
     </>,
     { title: 'Reset the game?' },
-  ),
-)
-
-host.post('/host/reset', async (c) => {
-  await resetGame(createDb(c.env.DB))
-  return c.redirect('/host?done=reset', 303)
+  )
 })
+
+host.post(
+  '/host/reset',
+  zValidator(
+    'form',
+    z.object({
+      phase: phaseSchema,
+      lastPlayerId: z.coerce.number().int().nonnegative(),
+      playerCount: z.coerce.number().int().nonnegative(),
+    }),
+    (r, c) => {
+      if (!r.success) return c.redirect('/host?done=reset-unchanged', 303)
+    },
+  ),
+  async (c) => {
+    const reset = await resetGame(createDb(c.env.DB), c.req.valid('form'))
+    return c.redirect(reset ? '/host?done=reset' : '/host?done=reset-unchanged', 303)
+  },
+)
 
 // ---- Emergency "show all" ----
 

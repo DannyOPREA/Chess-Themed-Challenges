@@ -20,3 +20,24 @@ Plan: [docs/phase-3-screens/06-host-reset.md](../../docs/phase-3-screens/06-host
 - The reset works in every phase and has one confirm page, like removing a player, with no extra typed confirmation. Why: the host may want to reset from any phase (after the Reveal of a test game, or mid-game to start over), and the other actions that can't be undone use one confirm step, which keeps the host page consistent.
 - The button sits in its own "Reset" section at the bottom of the host page, below "Emergency". Why: the bottom is the hardest place to tap by accident, and keeping it apart from "show all" avoids mixing it up with the emergency button.
 - Updated `docs/scope.md` (host page actions) with this unit. Why: Danny's own request for the button is the OK `CLAUDE.md` asks for before changing the spec.
+
+## 2026-10-07: Code review
+
+**Done**
+- Ran `/code-review` at `high` on the branch against `main`. Seven findings, handled as follows:
+  1. A stale confirm page (an old tab, the Back button) could wipe a later game, such as Saturday's. Fixed: the confirm page carries a marker (phase, highest player id, number of players) and the reset changes nothing, with a "wasn't reset" notice, if the game has moved on since. Tests for a join, a removal, a phase change and a reset in between, a second tap after a join, and tampered forms.
+  2. `docs/phases.md` still said the whole-app check waits for every phase 3 unit. Fixed: wave E names the units it covered, and 3.06's entry says the check isn't re-run for it.
+  3. `test/reset-db.ts` copied the reset's statements. Fixed: it calls `resetGame`, so the tests and the host clear the same tables.
+  4. The new test's join helper repeats the ones in `test/join.test.ts` and `test/play.test.ts`. Left as it is: each test file in this repo keeps its own small request helpers, and moving them is a refactor beyond this unit.
+  5. `src/auth/session.ts` only named unit 4.01 as clearing game data. Fixed: its comments name the reset and why it depends on ids never being reused.
+  6. The reset notice described the whole game ("every player ... deleted"), which turns false if the page is reloaded after people join. Fixed: it now reads "The game was reset.", an event like "Player removed.".
+  7. `/host/reset` wasn't in the test's list of protected host paths. Fixed.
+
+**Worked**
+- Typecheck and 295 tests pass.
+
+**Didn't work**
+- The first version of the stale-page test removed a player from an earlier loop round, so the removal case passed for the wrong reason and then failed. Fixed the test, and added the player count to the marker, because removing anyone but the newest player leaves the highest id unchanged.
+
+**Decisions**
+- The stale check is a read just before the batch, not a guard inside it. Why: it is there for pages left open, where minutes or days pass; a guard inside the batch can't be written for all three statements, as the reset itself changes the phase and the players the guard would read. A join in the same few milliseconds as a reset is lost, as it would be a moment later anyway.

@@ -17,7 +17,7 @@ The spec is [`docs/scope.md`](docs/scope.md) and the build plan is [`docs/phases
 
 ## Host page
 
-The host page is at `/host`. The browser asks for a user name and password: any user name works, and the password is the `HOST_PASSWORD` secret (`local-host-password` when running locally). From there the host moves the game through its phases, fixes completions, resets PINs, removes players and shows the join QR code. "Reset the game", at the bottom, deletes every player and accusation and puts the game back in the Lobby (after a confirm page); phones go back to the join screen and the host password stays the same.
+The host page is at `/host`. The browser asks for a user name and password: any user name works, and the password is the `HOST_PASSWORD` secret (`local-host-password` when running locally). From there the host moves the game through its phases, fixes completions, resets PINs, removes players and shows the join QR code. "Reset the game", at the bottom, deletes every player and accusation and puts the game back in the Lobby (after a confirm page, which resets nothing if the game has changed since it was opened); phones go back to the join screen and the host password stays the same.
 
 ## Deploying
 

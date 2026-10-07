@@ -132,16 +132,47 @@ export const removePlayer = async (db: Db, id: number) => {
 }
 
 /**
+ * Where the game is, for the reset's confirm page: the phase, the highest
+ * player id (0 with nobody) and the number of players. Any join, removal,
+ * reset or phase change since changes one of them, as player ids are never
+ * reused.
+ */
+export const gameMarker = async (db: Db) => {
+  const row = await db
+    .select({
+      phase: game.phase,
+      lastPlayerId: sql<number>`(select coalesce(max(${players.id}), 0) from ${players})`,
+      playerCount: sql<number>`(select count(*) from ${players})`,
+    })
+    .from(game)
+    .where(eq(game.id, 1))
+    .get()
+  if (!row) throw new Error('The game row is missing; apply the migrations')
+  return row
+}
+export type GameMarker = Awaited<ReturnType<typeof gameMarker>>
+
+/**
  * Resets the game (Danny's request, 2026-10-07): deletes every accusation and
  * every player and puts the game back in the Lobby, in one D1 batch (one
  * transaction). Accusations are deleted explicitly rather than left to the
  * cascade. Player ids keep counting up (AUTOINCREMENT), so a phone still
  * holding an old player's cookie is logged out, not taken for a new player.
+ *
+ * Returns false, changing nothing, if the game has moved on since `seen` was
+ * read for the confirm page (a stale tab or the Back button, perhaps during a
+ * later game). The check is a read just before the batch: it is there for
+ * stale pages, not for a join in the same few milliseconds.
  */
-export const resetGame = async (db: Db) => {
+export const resetGame = async (db: Db, seen: GameMarker) => {
+  const now = await gameMarker(db)
+  if (now.phase !== seen.phase || now.lastPlayerId !== seen.lastPlayerId || now.playerCount !== seen.playerCount) {
+    return false
+  }
   await db.batch([
     db.delete(accusations),
     db.delete(players),
     db.update(game).set({ phase: 'lobby' }).where(eq(game.id, 1)),
   ])
+  return true
 }

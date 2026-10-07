@@ -27,7 +27,7 @@ Units in the same wave can run in parallel. A unit starts once every unit it dep
 | C | 3.01 Join and rejoin, 3.04 Host page | 1.02 and 2.02 |
 | D | 3.02 Player screen, 3.03 Accusations, 3.05 Reveal | 3.01 (and 2.01 for 3.05) |
 | D2 | 3.06 Host reset button (added 2026-10-07 at Danny's request) | 3.04 |
-| E | Whole-app check (not a unit, see below) | every unit in phases 1 to 3 |
+| E | Whole-app check (not a unit, see below) | units 3.01 to 3.05 and phases 1 and 2 (it ran before 3.06 was added) |
 | F | 4.01 Switch to real content | the Thursday test run and Danny's word |
 
 No other unit needs 1.03, but it comes early so that Danny's Cloudflare steps can be done before Thursday.
@@ -109,7 +109,7 @@ Each screen polls every 10 seconds with htmx. No unit may send a player another 
 ### 3.06 Host reset button (`06-host-reset.md`)
 
 - Depends on: 3.04
-- Added on 2026-10-07 at Danny's request, after the whole-app check, so the live app can be cleaned before the Thursday test run.
+- Added on 2026-10-07 at Danny's request, after the whole-app check, so the live app can be cleaned before the Thursday test run. The whole-app check isn't re-run for it; the unit's own review plays the reset in a browser.
 - Delivers: a "Reset the game" button on the host page, behind a confirm page, that deletes every player and accusation and puts the game back in the Lobby. Logged-in phones go back to the join screen; the host password is unchanged.
 - Tests: the confirm step changes nothing; the reset from every phase; logged-in phones are sent to the join screen and the same name can join again.
 
