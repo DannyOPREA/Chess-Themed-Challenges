@@ -157,3 +157,42 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 **Decisions**
 - Confirm phase changes on the host page. Why: unit 1.02 made phases forward-only, as `docs/scope.md` describes, so a mis-tapped "close accusations" can't be undone; the unit reviewer pointed out the 3.04 thread reads only its own plan, so the safeguard has to be in `phases.md`.
 - Trim the displayed name in 3.01. Why: `nameKey` ignores spaces at either end, so "Dan " and "Dan" are one player and should look like one.
+
+## 2026-10-07: Whole-app check
+
+**Done**
+- The whole-app check from `docs/phases.md` and `CLAUDE.md` on `main` at 5146755, once every unit in phases 1 to 3 was merged (PRs #7 to #16). Local only, with the `test` content; nothing deployed.
+- `npm run typecheck` clean; `npm test` 15 files, 285 tests passed.
+- Game 1, played by this thread (Playwright, one browser context per phone at 390 × 844, plus the host with basic auth): Ann, Ben, Cat, Dan, Eve and Gus in the Lobby; Fay joined late in Game on; Ann rejoined on a fresh browser as "ANN" (after a wrong PIN was refused) and made one more guess from it; the host removed Gus, who had a right guess about Ann and was guessed right by Ann; Dan marked done then undid it and the host marked him done once accusations closed; the host unmarked Eve; Ben changed a right guess to a wrong one and cleared another; Cat changed a wrong guess to a right one.
+- Game 2, played by the `unit-reviewer` agent on its own copy and port: seven players, a late joiner, a rejoin as "bOB", a host PIN reset, two host completion fixes and a removal once accusations closed, and a second run with 25 players (22 in the Lobby, a double "Game on", 3 late joiners at once).
+- Scores worked out by hand from `docs/scope.md` for both games and compared with the leaderboard and every breakdown.
+
+  Game 1:
+
+  | Player | Done | Detected by | Challenge | Accusations | Total | Rank |
+  |---|---|---|---|---|---|---|
+  | Ann | yes | nobody (Gus's right guess went with him) | +5 | Ben ✓ +2, Fay ✓ +2, Cat ✗ −1 | 8 | 1 |
+  | Cat | no | Fay | 0 | Ben ✓ +2, Eve ✓ +2 | 4 | 2 |
+  | Dan | yes (host) | nobody (Ben's guess cleared) | +5 | Ann ✗ −1, Eve ✗ −1 | 3 | =3 |
+  | Fay | yes | Ann | +1 | Cat ✓ +2 | 3 | =3 |
+  | Ben | yes | Ann, Cat | +1 | Ann ✗ −1 | 0 | =5 |
+  | Eve | no (host unmarked) | Cat | 0 | none | 0 | =5 |
+
+  Game 2 (reviewer): Eve 7 (1), Alice 4 (2), Bob 3 (3), Dave 1 (4), Carol −1 (=5), Frank −1 (=5).
+
+**Worked**
+- Every score, rank and breakdown matched the hand-worked figures in both games, including shared ranks, a removed player's guesses dropping out, cleared and changed guesses, and host completion fixes.
+- Assignment: all challenges and decoys different up to 20 players (late joiner included); with 25, each used once or twice. A rejoin kept challenge, decoy, completion and guesses.
+- No spoilers: about 300 player responses (pages, htmx fragments, headers) captured before the Reveal held no other player's challenge description or decoy; host pages outside "show all" held no challenge or decoy names.
+- The 10-second polls moved open screens on by themselves: the player screen into Game on, the accusations screen to read-only, a host completion fix onto the player's screen, and every open player screen to the results at the Reveal.
+- Stale tabs were refused cleanly after accusations closed (a guess change and an "I've done it" tap), and a forged self-accusation was refused.
+- No horizontal overflow on any screen at phone width, no server errors, and only the expected console messages (400 and 401 from refused logins).
+
+**Didn't work**
+- This thread's first run of game 1 had a script bug: a "tampered form" step posted empty guesses for every player id, which cleared Ann's real guesses. The app did exactly what those posts asked; the run was repeated on a fresh database with the step fixed to a single self-accusation.
+
+**Decisions**
+- No fixes needed, so this PR only logs the check. Why: the reviewer's verdict was Pass with nothing Blocking or Should fix, and this thread's own game found nothing broken.
+- Reviewer notes left as they are, for Danny's end-of-build review: the reveal leaderboard's name links are about 20 px tall (the breakdown cards below are large tap targets), and "Back to the host page" is a small text link (the phone's Back button does the same). Why: both are cosmetic, and each code change would mean another full review cycle so close to the test run.
+- Reviewer note passed on to Danny: `wrangler dev` doesn't enforce the free plan's 10 ms CPU limit; local responses took 12 to 21 ms including SQLite and the network, so the real CPU time should be lower (inferred). Why: worth a glance at the Workers dashboard during Thursday's test run.
+- The Cloudflare account, checked read-only through the connector, still has no Workers and no D1 databases, so Danny's dashboard steps from unit 1.03 are still to do. Why: the app can't go live until they are.
