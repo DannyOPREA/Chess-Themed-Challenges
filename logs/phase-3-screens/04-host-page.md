@@ -77,3 +77,26 @@ Plan: [docs/phase-3-screens/04-host-page.md](../../docs/phase-3-screens/04-host-
 
 **Decisions**
 - Take 3.01's API. Why: joining is the main user of PIN hashing, and with the same exports on both branches, whichever unit merges second only has to keep one body; nothing else changes.
+
+## 2026-10-07: Unit review
+
+**Done**
+- Ran the `unit-reviewer` agent. It started on the first commit and re-checked everything on the latest one. Verdict "Fix needed": nothing Blocking on the latest commit, one Should fix, and notes.
+  - It reproduced the first commit's Game on race in a scratch test (a player who joined between two runs' reads got a challenge someone else held) and confirmed the code-review fix stops it: the losing run now writes nothing.
+  - Should fix: the player names in the list were small text links (about 30 × 20 px), and they are the only way to a player's completion, PIN and Remove, so a mis-tap in a pub could pick the wrong player. Fixed: each name is a full-width outline button, 50 px tall at 390 px wide.
+  - Note: the notices after an action were easy to miss. Fixed: shown in a Pico `<article>` box, in bold.
+  - Note: odd indentation in the `basicAuth` options. Fixed.
+  - Note: players left without numbers by the join race stay so until unit 3.01 assigns them. Nothing to change here; the 3.01 thread confirmed it assigns any player it finds unassigned during Game on.
+  - Note: Game on runs one D1 query per lobby player in one invocation; fine for about 20 players, near the free plan's limit only at about 48. No change.
+  - Note: the phase heading isn't polled, so a second host tab shows the old phase until reloaded; the confirm page re-checks, so it's harmless. No change.
+  - Note: removing a player at the Reveal changes the leaderboard, as 1.02's rules allow. No change.
+- The reviewer checked spoilers by saving every host response and searching for challenge, decoy, description and hint text: only the confirmed "show all" page had any.
+
+**Worked**
+- Typecheck and 170 tests pass.
+
+**Didn't work**
+- A PIN test asserted the hash doesn't contain the PIN's digits, which a hex hash does about once in a thousand runs; it failed once. Removed that assertion, as it tested nothing real (the hash is checked for its format and against a wrong PIN instead).
+
+**Decisions**
+- None beyond the fixes above.

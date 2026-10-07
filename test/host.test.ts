@@ -123,7 +123,7 @@ describe('who has joined', () => {
   })
 
   it('shows only its own notices', async () => {
-    expect(await (await get('/host?done=removed')).text()).toContain('<p role="status">Player removed.</p>')
+    expect(await (await get('/host?done=removed')).text()).toContain('<article role="status"><strong>Player removed.</strong></article>')
     for (const done of ['constructor', 'toString', '<b>hi</b>']) {
       expect(await (await get(`/host?done=${encodeURIComponent(done)}`)).text()).not.toContain('role="status"')
     }

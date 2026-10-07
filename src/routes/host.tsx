@@ -32,10 +32,10 @@ export const host = new Hono<AppEnv>()
 host.use(
   '/host/*',
   basicAuth({
-      realm: 'Chess pub crawl host',
-      // Any user name; only the password counts, so there's one less thing to
-      // remember on the night. An unset password locks the page rather than
-      // opening it.
+    realm: 'Chess pub crawl host',
+    // Any user name; only the password counts, so there's one less thing to
+    // remember on the night. An unset password locks the page rather than
+    // opening it.
     verifyUser: async (_user, password, c: Context<AppEnv>) => {
       const expected = c.env.HOST_PASSWORD
       return !!expected && (await timingSafeEqual(password, expected))
@@ -63,7 +63,11 @@ const NOTICES = {
 type NoticeKey = keyof typeof NOTICES
 
 const Notice = ({ done }: { done: string | undefined }) =>
-  done && Object.hasOwn(NOTICES, done) ? <p role="status">{NOTICES[done as NoticeKey]}</p> : null
+  done && Object.hasOwn(NOTICES, done) ? (
+    <article role="status">
+      <strong>{NOTICES[done as NoticeKey]}</strong>
+    </article>
+  ) : null
 
 const idParam = zValidator('param', z.object({ id: z.coerce.number().int().positive() }), (result, c) => {
   if (!result.success) return c.notFound()
@@ -89,14 +93,21 @@ const PlayerList = ({ list, phase }: { list: Awaited<ReturnType<typeof listPlaye
     {list.length === 0 ? (
       <p>Nobody has joined yet.</p>
     ) : (
-      <ul>
+      // Full-width buttons, so each player is easy to tap on a phone: the
+      // player's page is where completion, PIN and removal live.
+      <div>
         {list.map((p) => (
-          <li>
-            <a href={`/host/players/${p.id}`}>{p.name}</a>
+          <a
+            href={`/host/players/${p.id}`}
+            role="button"
+            class="outline secondary"
+            style="display: block; width: 100%; text-align: left; margin-bottom: 0.5rem"
+          >
+            {p.name}
             {phase !== 'lobby' && !p.assigned ? <small> (no challenge yet)</small> : null}
-          </li>
+          </a>
         ))}
-      </ul>
+      </div>
     )}
   </section>
 )
