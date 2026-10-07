@@ -67,7 +67,7 @@ export type PlayerScore = {
 
 // By name ignoring capitals (names are unique that way), then by id.
 const compareNames = (a: string, b: string) => a.localeCompare(b, 'en', { sensitivity: 'accent' })
-const byName = (a: { id: number; name: string }, b: { id: number; name: string }) =>
+export const byName = (a: { id: number; name: string }, b: { id: number; name: string }) =>
   compareNames(a.name, b.name) || a.id - b.id
 const byAccusedName = (a: AccusationResult, b: AccusationResult) =>
   compareNames(a.accusedName, b.accusedName) || a.accusedId - b.accusedId

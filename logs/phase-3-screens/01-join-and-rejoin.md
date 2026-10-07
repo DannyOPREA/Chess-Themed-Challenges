@@ -103,3 +103,17 @@ Plan: [docs/phase-3-screens/01-join-and-rejoin.md](../../docs/phase-3-screens/01
 
 **Decisions**
 - One shared copy. Why: `/code-review` on 3.02 found three private copies of the same guard; one place to change if the game row changes.
+
+## 2026-10-07: Longer timeout for the 20-joiner race test (from unit 3.03)
+
+**Done**
+- `test/join.test.ts`, "all get different challenges when they join at the same moment", now has a 30-second timeout. Found on unit 3.03's PR #16, whose CI run on 72461ce failed with this test timing out at Vitest's default 5 seconds, while every other run (locally about 0.3 s, and earlier CI runs on the same code) passed.
+
+**Worked**
+- Nothing new.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- A longer timeout, not a smaller race. Why: the 20 phones joining at once are what the test is for, and its retry loop is bounded (each failed try means another joiner was written), so a slow runner makes it slow, not stuck. 3.03 changed nothing on the join path.

@@ -272,7 +272,10 @@ describe('late joiners during Game on', () => {
     const everyone = await allPlayers()
     expect(new Set(everyone.map((p) => p.challenge)).size).toBe(20)
     expect(new Set(everyone.map((p) => p.decoy)).size).toBe(20)
-  })
+  },
+  // 20 racing joiners retry each other's clashes; about 0.3 s locally, but
+  // over 5 s once on a busy CI runner, so it gets more than the default.
+  30_000)
 
   it('assigns a player the host left unassigned when they next open a screen', async () => {
     // Joined in the Lobby just as the host started Game on, and was missed.
