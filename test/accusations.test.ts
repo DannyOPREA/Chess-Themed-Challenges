@@ -272,6 +272,10 @@ describe('the accusations screen', () => {
     )
     expect(page).toMatch(/hx-on::send-error="[^"]*Not saved/)
     expect(page).toMatch(/hx-on::response-error="[^"]*Not saved/)
+    expect(page).toMatch(/hx-on::timeout="[^"]*Not saved/)
+    expect(page).toContain('hx-request="{&quot;timeout&quot;:15000}"')
+    // The Back button doesn't bring back a pick that failed to save.
+    expect(page).toContain(`<select id="guess-${bob.id}" name="challenge" autocomplete="off">`)
     expect(page).toContain('<p id="guess-count">You have a guess for 0 of 2 players.</p>')
 
     const res = await post(ann, { accused: String(bob.id), challenge: '7' }, htmx)

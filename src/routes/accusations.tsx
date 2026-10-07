@@ -64,10 +64,15 @@ const savedText = (content: Content, guess: number | null) =>
 const statusScript = (text: string) =>
   `this.querySelector('[role=status]').textContent = ${JSON.stringify(text)}`
 const NOT_SAVED = 'Not saved. Check your signal and pick again.'
+// A save that hangs on a bad signal gives up after 15 seconds and says so,
+// rather than showing "Saving…" (and pausing the poll) for as long as it hangs.
+const SAVE_TIMEOUT_MS = 15_000
 const statusHandlers = {
+  'hx-request': JSON.stringify({ timeout: SAVE_TIMEOUT_MS }),
   'hx-on::before-request': statusScript('Saving…'),
   'hx-on::send-error': statusScript(NOT_SAVED),
   'hx-on::response-error': statusScript(NOT_SAVED),
+  'hx-on::timeout': statusScript(NOT_SAVED),
 }
 
 const GuessForm = ({
@@ -94,7 +99,9 @@ const GuessForm = ({
       <strong>{target.name}</strong>
     </label>
     <fieldset role="group">
-      <select id={`guess-${target.id}`} name="challenge">
+      {/* `autocomplete="off"`, so the Back button shows the saved guess, not a
+          pick that failed to save. */}
+      <select id={`guess-${target.id}`} name="challenge" autocomplete="off">
         <ChallengeOptions content={content} guess={target.guess} />
       </select>
       <button type="submit" class="secondary">

@@ -71,3 +71,23 @@ Plan: [docs/phase-3-screens/03-accusations.md](../../docs/phase-3-screens/03-acc
 
 **Decisions**
 - Use 3.02's `currentPhaseAllows` rather than this unit's own copy. Why: one shared guard for every phase-dependent write.
+
+## 2026-10-07: Second unit review
+
+**Done**
+- Ran the `unit-reviewer` agent again, on the head with 3.02 and 3.05 merged in. Verdict "Fix needed", nothing blocking. It confirmed both earlier Should fix items in 390 px and 360 px browsers ("Saving…" and "Not saved" on slowed, aborted and 500 saves; the no-JS save landing on its own row), the poll skipping ticks during a held save, the click-through from `/play`, and no spoilers in 56 saved responses. Its findings:
+  - Should fix: after a failed save, leaving the screen and coming back with the Back button showed the unsaved pick in the list with no warning, because the browser restored the form's value. Fixed: `autocomplete="off"` on the list (the reviewer confirmed it restores the saved value), with a test.
+  - Note: a save that hangs showed "Saving…" for as long as it hung and paused the poll, as htmx has no request timeout by default. Fixed: the row's form sets a 15-second timeout (`hx-request`) and `hx-on::timeout` shows "Not saved". Checked in Playwright with a save held for 20 seconds.
+  - Note: a poll already in flight when a save starts can still reload the page while the save is being sent. Left: it needs the phase or the players to change at that moment, the save has almost always reached the server by then, and the reloaded page shows the stored guess, so nothing wrong is shown.
+  - Note: the count can briefly disagree with the rows when a player joins during a save, until the next poll reloads the page. Left: cosmetic and gone within 10 seconds.
+  - Note: the Lobby player screen has no link to `/accuse`. Left: there is nothing to do there until Game on, and the player screen's wording (unit 3.02) says accusations open when the game starts.
+- Status set to Done.
+
+**Worked**
+- Playing the screen in a real browser again found the Back-button case, which tests in the Workers runtime can't reach.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- A 15-second timeout for a save. Why: long enough for a slow pub connection to get through, short enough that a player who looks at the row sees "Not saved" before they move on.
