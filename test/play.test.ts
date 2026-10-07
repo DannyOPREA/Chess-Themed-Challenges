@@ -354,6 +354,22 @@ describe('the 10-second poll', () => {
     expect(html).toContain('<h3>Decoy 4</h3>')
   })
 
+  it('moves a screen to the results when the host starts the Reveal, once', async () => {
+    const { cookie } = await samAndAlex('accusations_closed')
+    const key = seenKey(await page(cookie))
+    await setPhase('reveal')
+    const res = await get(`/play/status?seen=${key}`, cookie, HTMX)
+    expect(res.headers.get('HX-Redirect')).toBe('/reveal')
+    expect(await res.text()).toBe('')
+    // Coming back to the player screen during the Reveal stays there.
+    const again = seenKey(await page(cookie))
+    expect(again).toBe('reveal-1-0')
+    expect((await get(`/play/status?seen=${again}`, cookie, HTMX)).status).toBe(204)
+    const notice = await get(`/play/status?seen=${again}-refused`, cookie, HTMX)
+    expect(notice.headers.get('HX-Redirect')).toBeNull()
+    expect(await notice.text()).toContain('href="/reveal"')
+  })
+
   it('sends a phone that is no longer logged in to the join page', async () => {
     const { sam, cookie } = await samAndAlex('game_on')
     await db.delete(players).where(eq(players.id, sam.id))

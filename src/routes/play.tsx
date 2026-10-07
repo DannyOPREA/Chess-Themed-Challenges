@@ -123,8 +123,8 @@ const Status = ({
     ) : null}
     {phase === 'lobby' ? (
       <p>
-        You're in the lobby. Your secret challenge and decoy appear here when the game starts. In the meantime, have a
-        look at the hints below.
+        You're in the lobby. Your secret challenge and decoy appear here when the game starts, and accusations open
+        then too. In the meantime, have a look at the hints below.
       </p>
     ) : player.challenge === null || player.decoy === null ? (
       <p>
@@ -138,7 +138,7 @@ const Status = ({
     {/* Links to the accusation (3.03) and reveal (3.05) screens. */}
     {phase === 'game_on' ? (
       <a href="/accuse" role="button" class="secondary" style="width: 100%">
-        Make an accusation
+        Make or change accusations
       </a>
     ) : phase === 'accusations_closed' ? (
       <>
@@ -202,11 +202,18 @@ play.get('/play', async (c) => {
 })
 
 // The 10-second poll: the status section again, or 204 if nothing it shows
-// has changed.
+// has changed. When the host moves the game to the Reveal, a screen that last
+// saw another phase goes straight to the results (unit 3.05); a player who
+// comes back to this screen afterwards sees a link to them instead.
 play.get('/play/status', async (c) => {
   const player = c.var.player
   const phase = await getPhase(createDb(c.env.DB))
-  if (c.req.query('seen') === stateKey(phase, player)) return c.body(null, 204)
+  const seen = c.req.query('seen') ?? ''
+  if (seen === stateKey(phase, player)) return c.body(null, 204)
+  if (phase === 'reveal' && !seen.startsWith('reveal-')) {
+    c.header('HX-Redirect', '/reveal')
+    return c.body(null, 200)
+  }
   return c.html(<Status phase={phase} player={player} content={loadContent(c.env.CONTENT_SET)} />)
 })
 

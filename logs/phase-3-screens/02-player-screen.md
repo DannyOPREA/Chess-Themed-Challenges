@@ -45,3 +45,19 @@ Plan: [docs/phase-3-screens/02-player-screen.md](../../docs/phase-3-screens/02-p
 - `/code-review`: challenge and decoy were each looked up twice per render. Fixed with one `Secrets` component.
 - `/code-review`: a poll can read the phase twice for an unassigned player (once in `ensureAssigned`, once in the route). Not changed. Why: one extra small read per phone every 10 seconds in the Lobby is far inside D1's free plan, and avoiding it means changing 3.01's `requirePlayer` for every screen.
 - `/code-review`: showing the player their own challenge description during Game on might go against the scope's "full challenge descriptions are only shown at the reveal". Not changed, and not asked of Danny. Why: in Danny's real list the names (like "Challenge 1" in the test set) don't say what to do, so a player can't do their challenge without its description; the line sits under the hint list in the scope and is about the other 19 challenges. Only one reading makes the game playable.
+
+## 2026-10-07: Fitting with 3.03 and 3.05
+
+**Done**
+- Agreed paths with the threads building 3.03 Accusations (`/accuse`, which links back to `/play`) and 3.05 Reveal (`/reveal`, which sends a phone back to `/play` outside the Reveal). Neither edits `src/routes/play.tsx`; this unit doesn't edit `src/index.ts`.
+- The poll now sends a screen to `/reveal` when the Reveal starts. The accusations button reads "Make or change accusations", and the Lobby says accusations open when the game starts (3.03's suggestions). Typecheck and 243 tests pass.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- In the Reveal, the poll redirects to the results once (`HX-Redirect: /reveal` when the key it last saw is from another phase), but a plain visit to `/play` doesn't redirect. Why: 3.05 suggested always redirecting; this moves everyone over on their own at the big moment, while players can still come back to the hint list and the log-out button, and `/play` and `/reveal` can never redirect to each other in a loop.
+- Until 3.03 and 3.05 merge, the links give the 404 page. Why: the three units are built in parallel; the Reveal and accusations can't be reached on `main` meaningfully until they land, and nobody plays on `main` before then.

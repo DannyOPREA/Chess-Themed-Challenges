@@ -23,13 +23,13 @@ The player's home screen at `/play`, where players land after joining: their own
 3. `src/routes/play.tsx` replaces the placeholder. Every route is behind `requirePlayer` and sends `Cache-Control: no-store`, since the page holds the player's secret. A one-line `pageshow` script reloads the page when a browser shows it again from its back-forward cache (Safari does despite `no-store`), so Back after logging out on a borrowed phone lands on the join page.
    - `GET /play`: the player's name, the status section, the hint list and the log-out button.
    - The status section shows the phase and:
-     - Lobby: the challenge and decoy appear when the game starts; read the hints meanwhile.
+     - Lobby: the challenge and decoy appear, and accusations open, when the game starts; read the hints meanwhile.
      - Game on, Accusations closed and Reveal: the player's own challenge (name and description) with the completion status, and their decoy (name and description), marked optional and not affecting the score. A player with no challenge sees a line saying so instead.
-     - Game on: "I've done it", or "Undo: I haven't done it" once marked, and a link to the accusations screen (`/accuse`, unit 3.03).
+     - Game on: "I've done it", or "Undo: I haven't done it" once marked, and a "Make or change accusations" link to the accusations screen (`/accuse`, unit 3.03).
      - Accusations closed: the completion is frozen ("tell the host if it's wrong"), and a link to see your accusations (`/accuse`).
      - Reveal: a "See the results" link to the reveal (`/reveal`, unit 3.05).
    - The hint list: all 20 challenge names, in content order, each with its hint, in every phase. No descriptions.
-   - `GET /play/status`: the 10-second htmx poll. It sends the state key it last saw (phase, assigned, completed); while that still matches it gets `204 No Content`, which htmx doesn't swap, otherwise the new status section. A section showing a notice has a key no poll matches, so the next poll clears the notice.
+   - `GET /play/status`: the 10-second htmx poll. It sends the state key it last saw (phase, assigned, completed); while that still matches it gets `204 No Content`, which htmx doesn't swap, otherwise the new status section. A section showing a notice has a key no poll matches, so the next poll clears the notice. When the phase has just become Reveal (the key it last saw is from another phase), the poll answers `HX-Redirect: /reveal`, so phones on this screen move to the results on their own; a plain visit to `/play` in the Reveal shows the screen with its link.
    - `POST /play/done` with `completed=true|false` (the state wanted, not a toggle, so a double tap is harmless), checked with `zValidator`. htmx gets the new status section; a plain form post goes back to `/play`. If `setOwnCompletion` refuses, the status shows "That wasn't saved: you can only mark your challenge done while the game is on" (`/play?done=refused` for a plain post). A tampered form changes nothing (htmx gets a 204, a plain post goes back to `/play`).
 4. 3.01's tests that read the placeholder's wording now read the new screen's.
 
@@ -45,7 +45,7 @@ The player's home screen at `/play`, where players land after joining: their own
 - `Cache-Control: no-store` on the page and the poll, and the `pageshow` reload script (with no Content-Security-Policy to block it).
 - "I've done it" and undo from a plain form and from htmx (a fragment, not a page); a double tap; it doesn't touch another player's completion; refused in Lobby, Accusations closed and Reveal, including from a screen loaded in Game on, with the notice, which the next poll clears; a tampered form, by plain post and by htmx; a phone not logged in; the host's override shows.
 - `setOwnCompletion` in each phase, for an unassigned player, and for a missing player.
-- The poll: its attributes; 204 while unchanged; the new section when the phase changes, when the host changes the completion, and when Game on assigns the challenge; `HX-Redirect` for a removed player.
+- The poll: its attributes; 204 while unchanged; the new section when the phase changes, when the host changes the completion, and when Game on assigns the challenge; `HX-Redirect: /reveal` once when the Reveal starts, and not again; `HX-Redirect` for a removed player.
 
 ## Done when
 
