@@ -21,7 +21,7 @@ The host page is at `/host`. The browser asks for a user name and password: any 
 
 ## Deploying
 
-Every push to `main` deploys the app through Cloudflare Workers Builds; nothing is deployed by hand. Workers Builds installs the packages and runs `npm run deploy`, which applies any new D1 migrations to the production database and then runs `wrangler deploy`. Both use the API token in the build secret `DEPLOY_API_TOKEN` (step 5), and the deploy stops with a message naming it if it isn't set, because the token Workers Builds creates for itself can't use D1 and can't be given that permission. Wrangler runs `scripts/copy-vendor.mjs` before deploying, and finds the production database by its name, `chess-crawl`. CI's `check` job also builds the Worker without uploading it (`wrangler deploy --dry-run`), so a change that can't deploy fails before it reaches `main`.
+Every push to `main` deploys the app through Cloudflare Workers Builds; nothing is deployed by hand. Workers Builds installs the packages and runs `npm run deploy`, which applies any new D1 migrations to the production database and then runs `wrangler deploy`. `scripts/deploy.sh` runs both with the token Workers Builds provides, or with the API token in the build secret `DEPLOY_API_TOKEN` if that is set (step 5), and its first lines in the build log say which. Wrangler runs `scripts/copy-vendor.mjs` before deploying, and finds the production database by its name, `chess-crawl`. CI's `check` job also builds the Worker without uploading it (`wrangler deploy --dry-run`), so a change that can't deploy fails before it reaches `main`.
 
 The live app is at `https://chess-themed-challenges.<your-subdomain>.workers.dev`, shown on the Worker's page in the Cloudflare dashboard.
 
@@ -41,7 +41,7 @@ Do these in order, all on the free plan.
    - Root directory: leave empty
    - API token: create a new token
    - Preview builds (builds for branches other than `main`): off. They would fail, because the app has no preview settings, and nobody needs them. If the option isn't shown here, turn off **Enable Preview Builds** under **Settings > Builds > Branch control** afterwards.
-5. **A token that can use D1.** Applying migrations needs D1, which the token Workers Builds creates can't use or be given. Make one that can:
+5. **Only if the build's own token can't use D1.** Skip this step unless a build log says "Using the token Workers Builds provides." and then fails with an authentication error on `/d1/database/chess-crawl`. Then make a token that can:
    - Go to **My Profile > API Tokens** (https://dash.cloudflare.com/profile/api-tokens), click **Create Token**, and choose **Use template** next to **Edit Cloudflare Workers**.
    - Under Permissions, click **+ Add more** and pick **Account > D1 > Edit**. Under Account Resources pick your account, and under Zone Resources pick All zones.
    - Click **Continue to summary**, then **Create token**, and copy the token it shows (it's shown only once). If you lose it or roll it later, put the new value in `DEPLOY_API_TOKEN` too, or deploys stop.

@@ -128,3 +128,23 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 - Its notes taken: README step 5 now names the setting as Cloudflare's docs do (**Build variables and secrets**), and step 6 says a retried build picks up the secret, since the docs say a retry uses the settings as they are when it is retried. Why: both make the steps match the dashboard and docs.
 - Its notes left: a secret that is only spaces passes the check, and `CLOUDFLARE_API_KEY` plus `CLOUDFLARE_EMAIL` would beat the token if both were set. Why: Danny pastes the value with the dashboard's copy button, and Workers Builds sets neither of the others.
 - The name `DEPLOY_API_TOKEN` and the build-secret approach were Claude's choices, not Danny's. Why recorded: logs say who decided (`logs/README.md` rule 6).
+
+## 2026-10-07: First real builds failed on the custom token
+
+**Done**
+- The first two real builds (after PR #18, and Danny's retry with a freshly rolled token) failed straight away. `wrangler d1 migrations apply` got "Authentication error [code: 10000]" on `/accounts/…/d1/database/chess-crawl`, then "Invalid access token [code: 9109]" on `/accounts`. Danny pasted both logs in the thread.
+- Moved the deploy command into `scripts/deploy.sh`: it uses `DEPLOY_API_TOKEN` when set and otherwise the token Workers Builds provides, and first prints the names of the build's `CLOUDFLARE_*` and `CF_*` variables and which token it chose.
+- Checked with a fake `wrangler` on `PATH`: the build's token is used without the secret, the secret's token with it, and a failed migration stops the script (exit 3) before `wrangler deploy`.
+
+**Worked**
+- The fail-fast check from the previous entry passed, so the secret reached the build.
+
+**Didn't work**
+- The custom token was rejected as invalid twice, the second time just after Danny rolled it and pasted the new value. A copying mistake twice in a row is unlikely, so the cause is probably the build environment. Workers Builds may route API calls, or set other variables, in a way that only its own token works with; that is inferred, not seen.
+- Never tested: whether the token Workers Builds creates can already use D1. Step 5 assumed it couldn't, from Cloudflare's list of its permissions. But Cloudflare's own Deploy button docs run `wrangler d1 migrations apply DB --remote` in the deploy script of exactly this kind of build, and Danny saw D1 Read offered on that token.
+
+**Decisions**
+- Try the build's own token next, with the custom token optional. Why: it is the setup Cloudflare's docs show for D1 migrations in Workers Builds. If it lacks D1, the log will now say so plainly.
+- Print the names of the Cloudflare variables in the build log. Why: if the next build fails too, the log shows whether Workers Builds sets something such as a custom API address, without showing any secret.
+- Brings back the fallback the code review removed in the entry before last. Why: the fail-fast check did its job; the fallback is now the main path being tested, and the new log lines say which token was used, which answers the code review's worry about a confusing error.
+- A script file instead of a longer one-liner in `package.json`. Why: it is now several steps with comments, which don't fit in JSON.
