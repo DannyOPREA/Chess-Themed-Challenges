@@ -26,6 +26,9 @@ The project scaffold must provide these npm scripts. Keep the names: the session
 - `npm run typecheck`: `tsc --noEmit`
 - `npm run db:generate`: generate a migration from the Drizzle schema
 - `npm run db:migrate:local`: apply migrations to the local D1
+- `npm run cf-typegen`: regenerate `worker-configuration.d.ts` (the `Env` type) after changing `wrangler.jsonc`
+
+The code layout and conventions every unit follows (where routes, game logic, content and tests go) are in `docs/phase-1-foundation/01-scaffold.md`, "Conventions for later units".
 
 ## Working agreement
 

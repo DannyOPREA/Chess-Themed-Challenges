@@ -1,0 +1,66 @@
+# Phase 1, unit 01: Scaffold
+
+- Status: In progress
+- Log: [logs/phase-1-foundation/01-scaffold.md](../../logs/phase-1-foundation/01-scaffold.md)
+- Depends on: nothing
+
+## Goal
+
+The empty app that runs locally and in CI, on the agreed stack, with the folder layout and conventions the later units share, so that units 1.02, 1.03, 2.01 and 2.02 can be built in parallel without touching the same lines.
+
+## Scope references
+
+- `docs/phases.md`, unit 1.01.
+- `CLAUDE.md`: the stack, the required npm script names, rule 1 (reuse before writing), rule 4 (`CONTENT_SET` starts as `test`), rule 7 (never deploy from a session).
+- `docs/scope.md`, "Hosting and tech": Cloudflare Workers and D1 on the free plan.
+
+## Work
+
+1. `package.json` with every package in the agreed stack, so later units don't each edit the lockfile:
+   - runtime: `hono`, `drizzle-orm`, `zod`, `@hono/zod-validator`, `uqr`, `@picocss/pico`, `htmx.org`
+   - development: `wrangler`, `drizzle-kit`, `typescript`, `vitest` (4.1, the version the Workers plugin supports), `@cloudflare/vitest-plugin` (the new name of `@cloudflare/vitest-pool-workers`)
+2. The npm scripts `CLAUDE.md` names, plus one for generated types:
+   - `dev`: `wrangler dev` (local Worker with a local D1)
+   - `test`: `vitest run`
+   - `typecheck`: `tsc --noEmit`
+   - `db:generate`: `drizzle-kit generate`
+   - `db:migrate:local`: `wrangler d1 migrations apply DB --local`
+   - `cf-typegen`: `wrangler types --strict-vars=false`, which regenerates `worker-configuration.d.ts` (the `Env` type and the Workers runtime types). Rerun it after any change to `wrangler.jsonc` and commit the result.
+3. `wrangler.jsonc`:
+   - the Worker `chess-themed-challenges`, entry `src/index.ts`, observability on
+   - the D1 binding `DB` (database `chess-crawl`, migrations in `migrations/`). It has no `database_id` yet; unit 1.03 sets up the production database.
+   - the var `CONTENT_SET` set to `test`
+   - Workers static assets from `public/`, and a build step (`scripts/copy-vendor.mjs`) that copies Pico CSS and htmx from `node_modules` into `public/vendor/` (git-ignored) before `wrangler dev` and `wrangler deploy`
+4. The shared page layout `src/layout.tsx` (a `jsxRenderer`): phone viewport, Pico CSS, htmx, a `<main class="container">`, and a `title` passed as `c.render(content, { title })`.
+5. `src/index.ts`: the Hono app with `secureHeaders()`, `csrf()` and the layout, and one `app.route()` line per screen.
+6. A placeholder start page at `/` (`src/routes/home.tsx`), which unit 3.01 replaces with the join page.
+7. Drizzle: `drizzle.config.ts` (SQLite dialect, schema `src/db/schema.ts`, migrations out to `migrations/`), an empty schema for unit 1.02 to fill, and `createDb(c.env.DB)` in `src/db/client.ts`.
+8. Vitest with `@cloudflare/vitest-plugin` (`vitest.config.ts`): tests run in the Workers runtime with the bindings from `wrangler.jsonc`, and every migration in `migrations/` is applied to the test D1 before each test file (`test/apply-migrations.ts`).
+9. One test of the start page (`test/home.test.ts`), so CI's `check` job runs typecheck and tests for real.
+
+## Conventions for later units
+
+- Screens: one file per screen under `src/routes/`, exporting a `new Hono<AppEnv>()` sub-app, registered in `src/index.ts` with one `app.route('/', ...)` line. Pages call `c.render(<Content />, { title })`.
+- Game logic: pure functions in `src/game/`, one file per topic (scoring, assignment, phases).
+- Content: `src/content/` (unit 1.02).
+- Database: tables in `src/db/schema.ts`, then `npm run db:generate` writes the migration into `migrations/`. Tests get it applied automatically.
+- Tests: in `test/`, one file per topic, named `*.test.ts` or `*.test.tsx`. A test calls the Worker with `exports.default.fetch(url, init)` from `cloudflare:workers` and reads bindings with `env` from `cloudflare:test`.
+- Form posts: the `csrf()` middleware refuses a `POST` whose `Origin` header is missing or from another site, so tests that post forms set `Origin: https://example.com` when they fetch `https://example.com/...`.
+- Bindings: change `wrangler.jsonc`, then `npm run cf-typegen`. Never edit `worker-configuration.d.ts` by hand.
+
+## Tests
+
+- `test/home.test.ts`: `/` returns 200 with the layout (the viewport tag, Pico CSS and htmx), and an unknown path returns 404.
+- Game rules have no tests in this unit; it has no game logic.
+
+## Done when
+
+- `npm run typecheck` and `npm test` pass, locally and in CI's `check` job.
+- `npm run db:migrate:local` and `npm run dev` work, and the start page loads in a phone-sized browser with Pico CSS and htmx served from `/vendor/`.
+- `npm run db:generate` runs against the empty schema.
+
+## Not in this unit
+
+- The schema, migrations, content sets and phase rules (1.02).
+- The production D1 database, secrets, `.dev.vars.example` and Workers Builds settings (1.03).
+- Any game logic (2.01, 2.02) or real screens (phase 3).
