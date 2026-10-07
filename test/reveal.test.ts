@@ -64,7 +64,7 @@ const textOf = (html: string, player: Player) =>
 
 // The ids of the players whose breakdown is open.
 const openBreakdowns = (html: string) =>
-  [...html.matchAll(/<article id="player-(\d+)"><details open/g)].map((m) => Number(m[1]))
+  [...html.matchAll(/<article id="player-(\d+)" class="breakdown"><details open/g)].map((m) => Number(m[1]))
 
 // The leaderboard's rows as [rank, name, points], with tags stripped.
 const leaderboardRows = (html: string) => {
@@ -160,6 +160,7 @@ describe('a full game worked out by hand', () => {
       ['5', 'Dev (you)', '1'],
     ])
     expect(html.match(/aria-current="true"/g)).toHaveLength(1)
+    expect(html).toContain('<a href="/play" role="button" class="secondary outline">Back to your screen</a>')
   })
 
   it("gives one player's full breakdown", async () => {

@@ -138,7 +138,7 @@ const Breakdown = ({
   const challenge = s.challenge === null ? undefined : getChallenge(content, s.challenge)
   const decoy = s.decoy === null ? undefined : getDecoy(content, s.decoy)
   return (
-    <article id={`player-${s.id}`}>
+    <article id={`player-${s.id}`} class="breakdown">
       <details open={open} style="margin-bottom: 0">
         <summary>
           {rank(s)}. {s.name}
@@ -223,11 +223,23 @@ reveal.get('/reveal', showQuery, async (c) => {
       </hgroup>
       <Leaderboard scores={scores} you={you} rank={rank} />
       <section>
+        {/* Pico gives a summary a 1rem line height, so the padding makes the
+            whole card the tap target, and the gap keeps an open card's first
+            line clear of its summary. */}
+        <style>
+          {'.breakdown summary { padding: 0.75rem 0; margin: -0.75rem 0; } ' +
+            '.breakdown details[open] summary { margin-bottom: 0.75rem; }'}
+        </style>
         <h2>Everyone's breakdown</h2>
         {scores.map((s) => (
           <Breakdown score={s} you={you} open={s.id === you || s.id === show} rank={rank} content={content} />
         ))}
       </section>
+      <p>
+        <a href="/play" role="button" class="secondary outline">
+          Back to your screen
+        </a>
+      </p>
     </>,
     { title: 'Final results' },
   )

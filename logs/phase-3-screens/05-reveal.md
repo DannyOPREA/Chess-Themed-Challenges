@@ -52,3 +52,21 @@ Plan: [docs/phase-3-screens/05-reveal.md](../../docs/phase-3-screens/05-reveal.m
   - Should fix: no build log entry; 2.01's plan and log not updated; the plan's "reads nothing else" didn't match; leaderboard links landed on closed breakdowns. All fixed (code review findings 2, 3 and 5 above).
   - Note: summary rows were about 32 px tall, and an open breakdown ran straight into the next summary. Fixed: each breakdown is a Pico card (`<article>`), which pads and separates them, and labels replace the large headings inside.
   - Note: mixed minus signs. Fixed (code review finding 6).
+
+## 2026-10-07: Second unit review
+
+**Done**
+- Ran the `unit-reviewer` again on the fixes. Verdict "Pass", nothing Blocking or Should fix. It played a fresh seven-player game (a changed guess, a cleared guess, a host fix while accusations were closed, a removed player, a player with no challenge, and a negative total) and every phone's leaderboard and breakdowns matched its hand calculation. Leaderboard links opened the right card, bad `show` values were ignored, and `/reveal` (with or without `show`) still sent nothing before the Reveal.
+- Acted on its notes (below), and added a "Back to your screen" button. Typecheck and 236 tests pass.
+
+**Worked**
+- Checked the padded summaries in a phone-sized browser: a tap 6 px inside a closed card now opens it.
+
+**Didn't work**
+- Padding the summary inline with a negative margin on both sides made an open card's first line touch its summary. Moved the rule into a small page `<style>` that adds the gap back only when the card is open.
+
+**Decisions**
+- Note: summaries were only 16 px tall inside a 48 px card, so taps near a card's edge missed. Fixed: the summary is padded to fill the card.
+- Note: a second leaderboard tap closes the card the first one opened, as only one `show` is kept. Not changed. Why: the phone's own card stays open and one other is what a player looks at.
+- Note: this second review needed logging. This entry.
+- A "Back to your screen" button to `/play` at the bottom. Why: the 3.02 thread chose to keep `/play` reachable in the Reveal (hint list, log out) and asked that the reveal link back to it rather than `/play` redirecting here; its poll moves a phone to `/reveal` only once, so the two can't loop.
