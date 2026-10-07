@@ -214,15 +214,19 @@ describe('the accusations screen', () => {
   it('answers a right guess and a wrong one the same way', async () => {
     const [ann, bob] = [await addPlayer('Ann'), await addPlayer('Bob')]
     await setPhase('game_on')
+    // Bob's challenge is 2.
     const right = await post(ann, { accused: String(bob.id), challenge: '2' }, htmx)
     const rightHtml = await right.text()
     const wrong = await post(ann, { accused: String(bob.id), challenge: '5' }, htmx)
     const wrongHtml = await wrong.text()
     expect(right.status).toBe(wrong.status)
-    // Identical apart from which option is selected.
-    expect(rightHtml).toContain('<option value="2" selected="">')
-    expect(wrongHtml).toContain('<option value="5" selected="">')
-    expect(rightHtml.replace(' selected=""', '')).toBe(wrongHtml.replace(' selected=""', ''))
+    // Identical apart from the name of the challenge picked.
+    expect(rightHtml).toContain('Saved: Challenge 2.')
+    expect(wrongHtml).toContain('Saved: Challenge 5.')
+    expect(rightHtml.replace('Challenge 2', 'X')).toBe(wrongHtml.replace('Challenge 5', 'X'))
+    const plainRight = await post(ann, { accused: String(bob.id), challenge: '2' })
+    const plainWrong = await post(ann, { accused: String(bob.id), challenge: '5' })
+    expect(plainRight.headers.get('Location')).toBe(plainWrong.headers.get('Location'))
   })
 
   it('saves, changes and clears a guess with a plain form post', async () => {
@@ -241,19 +245,26 @@ describe('the accusations screen', () => {
     expect(html).toContain('Guess cleared.')
   })
 
-  it('saves a guess with htmx and returns the updated row', async () => {
-    const [ann, bob] = [await addPlayer('Ann'), await addPlayer('Bob')]
+  it('saves a guess with htmx and returns the row status and the new count', async () => {
+    const [ann, bob] = [await addPlayer('Ann'), await addPlayer('Bob'), await addPlayer('Cat')]
     await setPhase('game_on')
+    const page = await (await get('/accuse', ann)).text()
+    expect(page).toContain(`hx-target="#status-${bob.id}"`)
+    expect(page).toContain(`<small id="status-${bob.id}" role="status"></small>`)
+    expect(page).toContain('<p id="guess-count">You have a guess for 0 of 2 players.</p>')
+
     const res = await post(ann, { accused: String(bob.id), challenge: '7' }, htmx)
     expect(res.status).toBe(200)
     const html = await res.text()
-    expect(html).toMatch(/^<form id="player-\d+"/)
-    expect(html).toContain('<option value="7" selected="">Challenge 7</option>')
-    expect(html).toContain('Guess saved.')
-    expect(html).not.toContain('<html')
+    expect(html).toBe(
+      'Saved: Challenge 7.<p id="guess-count" hx-swap-oob="true">You have a guess for 1 of 2 players.</p>',
+    )
+    expect(await guessOf(ann, bob)).toBe(7)
     const cleared = await (await post(ann, { accused: String(bob.id), challenge: '' }, htmx)).text()
-    expect(cleared).toContain('Guess cleared.')
-    expect(cleared).toContain('<option value="" selected="">No guess</option>')
+    expect(cleared).toBe(
+      'Guess cleared.<p id="guess-count" hx-swap-oob="true">You have a guess for 0 of 2 players.</p>',
+    )
+    expect(await guessOf(ann, bob)).toBeUndefined()
   })
 
   it('refuses accusing yourself and bad forms, storing nothing', async () => {
@@ -335,7 +346,8 @@ describe('the 10-second poll', () => {
 
     await addPlayer('Cat')
     const res = await get(url, ann, htmx)
-    expect(res.headers.get('HX-Refresh')).toBe('true')
+    // A fresh screen, without any old `?done=` notice.
+    expect(res.headers.get('HX-Redirect')).toBe('/accuse')
   })
 
   it('reloads the page when accusations close', async () => {
@@ -343,14 +355,17 @@ describe('the 10-second poll', () => {
     await setPhase('game_on')
     const url = pollUrl(await (await get('/accuse', ann)).text())
     await setPhase('accusations_closed')
-    expect((await get(url, ann, htmx)).headers.get('HX-Refresh')).toBe('true')
+    expect((await get(url, ann, htmx)).headers.get('HX-Redirect')).toBe('/accuse')
   })
 
   it('polls in the Lobby, so the screen opens when the game starts, and stops at the Reveal', async () => {
     const ann = await addPlayer('Ann')
     const url = pollUrl(await (await get('/accuse', ann)).text())
+    // The Lobby screen lists nobody, so a joiner doesn't reload it.
+    await addPlayer('Bob')
+    expect((await get(url, ann, htmx)).status).toBe(204)
     await setPhase('game_on')
-    expect((await get(url, ann, htmx)).headers.get('HX-Refresh')).toBe('true')
+    expect((await get(url, ann, htmx)).headers.get('HX-Redirect')).toBe('/accuse')
     await setPhase('reveal')
     expect(await (await get('/accuse', ann)).text()).not.toContain('hx-trigger="every 10s"')
   })

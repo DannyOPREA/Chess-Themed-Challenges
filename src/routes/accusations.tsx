@@ -49,26 +49,24 @@ const ChallengeOptions = ({ content, guess }: { content: Content; guess: number 
   </>
 )
 
+// What a row says under its list once a guess is saved.
+const savedText = (content: Content, guess: number | null) =>
+  guess === null ? 'Guess cleared.' : `Saved: ${getChallenge(content, guess).name}.`
+
 // One player's row while accusations are open. With htmx, picking a challenge
-// saves straight away and the row is swapped for the saved one; without it,
-// the Save button posts the form and the page reloads.
-const GuessForm = ({
-  target,
-  content,
-  saved,
-}: {
-  target: Target
-  content: Content
-  saved?: boolean
-}) => (
+// saves straight away and only the row's status line is replaced, so the list
+// stays as the player left it and a quick second pick is sent after the first
+// (htmx queues it on the same form). Without JavaScript, the Save button posts
+// the form and the page reloads.
+const GuessForm = ({ target, content }: { target: Target; content: Content }) => (
   <form
     id={`player-${target.id}`}
     method="post"
     action="/accuse"
     hx-post="/accuse"
     hx-trigger="change, submit"
-    hx-target="this"
-    hx-swap="outerHTML"
+    hx-target={`#status-${target.id}`}
+    hx-swap="innerHTML"
   >
     <input type="hidden" name="accused" value={String(target.id)} />
     <label for={`guess-${target.id}`}>
@@ -82,10 +80,15 @@ const GuessForm = ({
         Save
       </button>
     </fieldset>
-    {saved ? (
-      <small role="status">{target.guess === null ? 'Guess cleared.' : 'Guess saved.'}</small>
-    ) : null}
+    <small id={`status-${target.id}`} role="status"></small>
   </form>
+)
+
+const GuessCount = ({ targets, oob }: { targets: Target[]; oob?: boolean }) => (
+  <p id="guess-count" hx-swap-oob={oob ? 'true' : undefined}>
+    You have a guess for {targets.filter((t) => t.guess !== null).length} of {targets.length}{' '}
+    {targets.length === 1 ? 'player' : 'players'}.
+  </p>
 )
 
 // One player's row once accusations are closed (or before they open).
@@ -99,20 +102,24 @@ const GuessRow = ({ target, content }: { target: Target; content: Content }) => 
 const INTRO: Record<Phase, string> = {
   lobby: 'Accusations open when the game starts.',
   game_on:
-    "Pick the challenge you think each player has. You can change or clear a guess until the host closes accusations. Nobody finds out whether a guess is right until the reveal, and nobody sees who you've accused.",
+    'Pick the challenge you think each player has. You can change or clear a guess until the host closes accusations. Nobody finds out whether a guess is right, or who guessed what, until the reveal.',
   accusations_closed: 'Accusations are closed. These are your final guesses.',
   reveal: 'Accusations are closed. These were your final guesses.',
 }
 
-// A fingerprint of what the 10-second poll watches: the phase and the other
-// players. Not the player's own guesses, or every save would reload the page a
-// few seconds later. Hashed only to keep the URL short.
+// A fingerprint of what the 10-second poll watches: the phase and, once the
+// game is on, the other players. Not the player's own guesses, or every save
+// would reload the page a few seconds later; not the players in the Lobby,
+// where the screen doesn't list them. Hashed only to keep the URL short.
 const fingerprint = (phase: Phase, targets: Target[]) =>
   sha256(JSON.stringify([phase, targets.map((t) => [t.id, t.name])]))
 
+// The phase and, outside the Lobby, the other players with this player's own
+// guesses.
 const load = async (c: Context<PlayerEnv>) => {
   const db = createDb(c.env.DB)
-  const [phase, targets] = await Promise.all([getPhase(db), listTargets(db, c.var.player.id)])
+  const phase = await getPhase(db)
+  const targets = phase === 'lobby' ? [] : await listTargets(db, c.var.player.id)
   return { phase, targets }
 }
 
@@ -120,7 +127,6 @@ accusations.get('/accuse', async (c) => {
   const { phase, targets } = await load(c)
   const content = loadContent(c.env.CONTENT_SET)
   const open = phaseAllows(phase, 'accuse')
-  const guessed = targets.filter((t) => t.guess !== null).length
   return c.render(
     <>
       <hgroup>
@@ -132,10 +138,7 @@ accusations.get('/accuse', async (c) => {
         <p>Nobody else has joined yet.</p>
       ) : (
         <section>
-          <p>
-            You have a guess for {guessed} of {targets.length}{' '}
-            {targets.length === 1 ? 'player' : 'players'}.
-          </p>
+          <GuessCount targets={targets} />
           {open ? (
             targets.map((t) => <GuessForm target={t} content={content} />)
           ) : (
@@ -151,7 +154,7 @@ accusations.get('/accuse', async (c) => {
         Back to my challenge
       </a>
       {phase === 'reveal' ? null : (
-        // Reloads the page when the phase or the players change (the host
+        // Reloads the screen when the phase or the players change (the host
         // opening or closing accusations, a late joiner, a removed player);
         // otherwise the poll gets an empty 204 and does nothing.
         <div
@@ -168,7 +171,8 @@ accusations.get('/accuse', async (c) => {
 accusations.get('/accuse/poll', async (c) => {
   const { phase, targets } = await load(c)
   if (c.req.query('v') === (await fingerprint(phase, targets))) return c.body(null, 204)
-  c.header('HX-Refresh', 'true')
+  // A fresh `/accuse`, not a reload, so an old `?done=` notice isn't shown again.
+  c.header('HX-Redirect', '/accuse')
   return c.body(null, 200)
 })
 
@@ -206,8 +210,13 @@ accusations.post(
     if (result === 'self') return backToScreen(c)
     if (result !== 'saved') return backToScreen(c, result)
     if (!c.req.header('HX-Request')) return backToScreen(c, challenge === null ? 'cleared' : 'saved')
-    const target = (await listTargets(db, c.var.player.id)).find((t) => t.id === accused)
-    if (!target) return backToScreen(c, 'gone')
-    return c.html(<GuessForm target={target} content={loadContent(c.env.CONTENT_SET)} saved />)
+    // The row's status line, and the count above the list, updated out of band.
+    const targets = await listTargets(db, c.var.player.id)
+    return c.html(
+      <>
+        {savedText(loadContent(c.env.CONTENT_SET), challenge)}
+        <GuessCount targets={targets} oob />
+      </>,
+    )
   },
 )

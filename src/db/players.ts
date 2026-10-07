@@ -3,14 +3,10 @@ import { assignOne, type AssignOptions } from '../game/assignment'
 import { nameKey } from '../game/names'
 import { type Phase, PHASES, phaseAllows } from '../game/phases'
 import type { Db } from './client'
-import { getPhase } from './game'
+import { currentPhase, getPhase } from './game'
 import { game, type Player, players } from './schema'
 
 // Reading and writing players for joining and rejoining (unit 3.01).
-
-// The game's phase at the moment a statement runs, so a write can be guarded
-// on it rather than on a phase read a moment earlier.
-const currentPhase = sql`(select ${game.phase} from ${game} where ${game.id} = 1)`
 
 const phaseList = (phases: readonly Phase[]) =>
   sql.join(

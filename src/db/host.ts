@@ -3,16 +3,13 @@ import { hashPin } from '../auth/pin'
 import { assignPlayers, type RandomSource } from '../game/assignment'
 import { canChangePhase, PHASES, type Phase, phaseAllows } from '../game/phases'
 import type { Db } from './client'
+import { currentPhase } from './game'
 import { game, players } from './schema'
 
 // The host page's reads and writes (unit 3.04). Only the host page calls these.
 
 // Whether a player has been given their challenge and decoy, without either.
 const assigned = sql<boolean>`${players.challenge} is not null`.mapWith(Boolean)
-
-// The game's current phase, inside another statement, so a write can be
-// guarded on the phase at the moment it runs rather than when it was read.
-const currentPhase = sql`(select ${game.phase} from ${game} where ${game.id} = 1)`
 
 /** Who has joined, in joining order, without anything that could spoil the game. */
 export const listPlayers = (db: Db) =>
