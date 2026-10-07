@@ -101,6 +101,23 @@ describe('assigning a late joiner', () => {
     expect(await assignLateJoiner(db, sam.id)).toEqual(sam)
   })
 
+  it('writes nothing if the host closes accusations between the read and the write', async () => {
+    await db.update(game).set({ phase: 'game_on' })
+    const sam = await addPlayer('Sam')
+    // The host's phase change lands just after the late joiner's read.
+    const racingDb = new Proxy(db, {
+      get(target, key, receiver) {
+        if (key !== 'batch') return Reflect.get(target, key, receiver)
+        return async (...args: Parameters<typeof db.batch>) => {
+          const result = await target.batch(...args)
+          await target.update(game).set({ phase: 'accusations_closed' })
+          return result
+        }
+      },
+    })
+    expect(await assignLateJoiner(racingDb, sam.id)).toEqual(sam)
+  })
+
   it('returns nothing for a player who was removed', async () => {
     const sam = await addPlayer('Sam')
     await db.delete(players).where(eq(players.id, sam.id))

@@ -12,6 +12,9 @@ export const nameKey = (name: string): string =>
 export const cleanName = (name: string): string =>
   name
     .replace(/\s/g, ' ')
-    .replace(/[\p{Cc}\p{Cf}]/gu, '')
+    .replace(/(?!\u200D)[\p{Cc}\p{Cf}]/gu, '')
+    // The zero-width joiner stays only where it joins two emoji into one,
+    // such as "👩‍💻".
+    .replace(/(?<!\p{Extended_Pictographic}\uFE0F?)\u200D|\u200D(?!\p{Extended_Pictographic})/gu, '')
     .replace(/ +/g, ' ')
     .trim()

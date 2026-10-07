@@ -37,7 +37,7 @@ const joinSchema = z.object({
 const NAME_TAKEN =
   "That name is already taken. If it's you, check your PIN; if not, choose a different name."
 const GAME_CLOSED =
-  "The game has closed to new players. If you've already joined, enter the same name and PIN to get back in."
+  'Nobody has joined with that name, and new players can no longer join. Check the spelling of your name.'
 
 const JoinPage = ({ phase, name, error }: { phase: Phase; name?: string; error?: string }) => {
   const open = phaseAllows(phase, 'join')

@@ -59,7 +59,7 @@ const joinedCookie = async (name: string, pin: string) => {
 }
 
 const NAME_TAKEN = 'That name is already taken'
-const GAME_CLOSED = 'The game has closed to new players.'
+const GAME_CLOSED = 'Nobody has joined with that name, and new players can no longer join.'
 
 describe('the join page', () => {
   it('asks for a name and a 4-digit PIN', async () => {
@@ -194,6 +194,13 @@ describe('joining', () => {
     const lookalike = await join('Sam Smith\u200B', '5678')
     expect(await lookalike.text()).toContain(NAME_TAKEN)
     expect(await allPlayers()).toHaveLength(1)
+  })
+
+  it('keeps emoji made of several joined parts whole', async () => {
+    await joinedCookie('Coder \u{1F469}\u200D\u{1F4BB}', '1234')
+    expect((await allPlayers())[0]?.name).toBe('Coder \u{1F469}\u200D\u{1F4BB}')
+    expect((await join('Al\u200Dex', '1234')).status).toBe(303)
+    expect((await allPlayers()).map((p) => p.name)).toContain('Alex')
   })
 
   it('leaves Secure off the cookie only on plain http, for the local dev server', async () => {
