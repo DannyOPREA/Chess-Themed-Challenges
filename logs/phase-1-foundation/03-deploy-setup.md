@@ -76,3 +76,21 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 **Decisions**
 - Its note that the deny list still allows a few remote Wrangler commands (`d1 time-travel restore`, `kv namespace create`, `r2 bucket create`): softened the plan's wording to say the list isn't complete, and added no more rules. Why: sessions have no Cloudflare credentials, and `CLAUDE.md` rule 7 is the guard; the deny list only catches the common slips.
 - Its note that the `versions` rule also blocks read-only commands: left as it is. Why: sessions have no use for them.
+
+## 2026-10-07: Deploy token that can use D1
+
+**Done**
+- `npm run deploy` now exports `CLOUDFLARE_API_TOKEN` from the build secret `DEPLOY_API_TOKEN` when it is set, so both migrations and the deploy use that token. README step 5 now has Danny make an "Edit Cloudflare Workers" token with D1 Edit and add it as that build secret.
+- Checked the fallback in `sh`: with `DEPLOY_API_TOKEN` set the commands get it; empty or unset, they keep Workers Builds' own token.
+
+**Worked**
+- Danny could create a new user token with **Account > D1 > Edit**.
+
+**Didn't work**
+- The original step 5 failed when Danny tried it. On the token Workers Builds created for itself, D1 offered only Read; Edit was greyed out. Cloudflare's docs don't say why.
+- Choosing another token under **Settings > Builds > API token** also failed: the list shows only the token Workers Builds made, not one created by hand. (The docs say "select one that you already own", but the dashboard doesn't offer it.)
+
+**Decisions**
+- Pass the token as a build secret rather than committing a `database_id` and dropping D1 from the build. Why: migrations must run against the live database, and that needs D1 Edit whatever the config says; a build secret is a documented Workers Builds feature, and Danny already had the token.
+- A separate name, `DEPLOY_API_TOKEN`, rather than overriding `CLOUDFLARE_API_TOKEN` directly in the build settings. Why: the docs say only the listed default variables can be overridden and don't say whether a build variable beats the injected build token, while a variable of our own name is read by our script for certain.
+- Use the new token for `wrangler deploy` too, not only for migrations. Why: with no `database_id`, `wrangler deploy` looks the database up by name, which also needs D1; with no D1 access it skips the lookup and the first deploy, onto the Hello World Worker that has no D1 binding yet, would fail.
