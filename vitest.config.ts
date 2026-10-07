@@ -10,10 +10,10 @@ export default defineConfig(async () => {
     plugins: [
       cloudflareTest({
         wrangler: { configPath: './wrangler.jsonc' },
-        miniflare: { bindings: { TEST_MIGRATIONS: migrations } },
       }),
     ],
     test: {
+      provide: { migrations },
       setupFiles: ['./test/apply-migrations.ts'],
     },
   }

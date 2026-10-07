@@ -14,7 +14,7 @@ A mobile web app for a one-night chess-themed pub crawl (Saturday 2026-10-10, ab
 - `uqr` for the join QR code
 - Player login: Hono signed cookies; 4-digit PIN stored as a salted SHA-256 hash via Web Crypto. No lockout after wrong PINs.
 - Host page: Hono `basicAuth`, password kept as a Cloudflare secret
-- Tests: Vitest + `@cloudflare/vitest-pool-workers`
+- Tests: Vitest + `@cloudflare/vitest-plugin` (Cloudflare's new name for `@cloudflare/vitest-pool-workers`)
 - Deploys: Cloudflare Workers Builds, on every push to `main`
 
 ## Commands

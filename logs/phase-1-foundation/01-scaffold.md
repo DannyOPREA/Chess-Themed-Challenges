@@ -44,3 +44,26 @@ Plan: [docs/phase-1-foundation/01-scaffold.md](../../docs/phase-1-foundation/01-
 - `secureHeaders()` and `csrf()` on every route. Why: both are Hono middleware (rule 1). `csrf()` matters for the host page: the browser resends its basic auth password on its own, so without it another site could post a phase change. Later units' tests set an `Origin` header on form posts (the plan's conventions).
 - Tests live in `test/` and call the Worker through `exports.default.fetch`. Why: Cloudflare's current recommendation (`SELF` is deprecated), and it exercises the real Worker with its middleware.
 - `createDb()` added now, with the empty schema. Why: units 1.02, 3.01 and 3.04 all need it, and adding it once here avoids conflicting copies.
+
+## 2026-10-07: Code review
+
+**Done**
+- Ran `/code-review` at `high` on the branch's diff against `main`. Eight findings, handled as follows:
+  1. `drizzle.config.ts` said Workers Builds applies migrations in production; the default deploy command doesn't. Fixed the comment: unit 1.03 sets up how production applies them.
+  2. The plan's CSRF convention overstated what `csrf()` checks (form content types only, and it also accepts `Sec-Fetch-Site: same-origin`). Fixed the wording in the plan and `src/index.ts`; other sites can't send other content types at all because the app sends no CORS headers. Added `test/security.test.ts` (cross-site form post refused, same-site post let through, secure headers sent).
+  3. The test-only migrations binding was added to the global `Env`, so app code could have typechecked against it. Moved it to Vitest's `provide`/`inject` instead.
+  4. `CLAUDE.md` and `docs/phases.md` still named `@cloudflare/vitest-pool-workers`. Updated both to the new name (logged in `general.md` for `phases.md`).
+  5. `npm run cf-typegen` wasn't in the permission allow list. Added it to `.claude/settings.json`.
+  6. `tsconfig.json` included `scripts/`, which holds only a `.mjs` file it never checks. Removed it.
+  7. `scripts/copy-vendor.mjs` is custom code (rule 1). Kept, see Decisions.
+  8. No test checks that `/vendor/*` is actually served. Not fixed in a test, see Decisions.
+
+**Worked**
+- Typecheck and the five tests pass after the fixes.
+
+**Didn't work**
+- The branch was first cut from a stale local `origin/main` (PR #3), so the first push lacked everything merged since (PRs #4 to #6). Found while fixing finding 4, rebased onto the current `main` before any review was complete, and restarted the `unit-reviewer`.
+
+**Decisions**
+- Keep the vendor copy script. Why: it is eight lines of build glue, not a solved problem a library covers; the alternatives are a CDN (a second site the pages depend on during the night) or Wrangler text-module rules for `.js` files (fragile with the bundler and the test runner). `copyFileSync` throws on a missing file, so a moved file fails the build loudly instead of shipping pages without CSS.
+- No automated test that `/vendor/*` is served. Why: tests call the Worker directly and Workers static assets sit in front of it, so a test can't see them; the unit-reviewer checks the files load in the browser, and unit 1.03 owns the Workers Builds build and deploy commands.

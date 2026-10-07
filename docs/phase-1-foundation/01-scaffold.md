@@ -45,7 +45,7 @@ The empty app that runs locally and in CI, on the agreed stack, with the folder 
 - Content: `src/content/` (unit 1.02).
 - Database: tables in `src/db/schema.ts`, then `npm run db:generate` writes the migration into `migrations/`. Tests get it applied automatically.
 - Tests: in `test/`, one file per topic, named `*.test.ts` or `*.test.tsx`. A test calls the Worker with `exports.default.fetch(url, init)` from `cloudflare:workers` and reads bindings with `env` from `cloudflare:test`.
-- Form posts: the `csrf()` middleware refuses a `POST` whose `Origin` header is missing or from another site, so tests that post forms set `Origin: https://example.com` when they fetch `https://example.com/...`.
+- Form posts: actions are plain HTML forms or htmx requests (both send form-encoded bodies). The `csrf()` middleware refuses such a post unless its `Origin` is this site or the browser marks it `Sec-Fetch-Site: same-origin`, so tests that post forms set `Origin: https://example.com` when they fetch `https://example.com/...`. It ignores other content types, which other sites can't send anyway, since the app sends no CORS headers; don't add CORS.
 - Bindings: change `wrangler.jsonc`, then `npm run cf-typegen`. Never edit `worker-configuration.d.ts` by hand.
 
 ## Tests

@@ -38,7 +38,7 @@ Folder: `docs/phase-1-foundation/`
 ### 1.01 Scaffold (`01-scaffold.md`)
 
 - Depends on: nothing
-- Delivers: the empty app that runs locally and in CI. Hono with `hono/jsx` server-rendered pages, a shared page layout with Pico CSS and htmx, `wrangler.jsonc` with the D1 binding and the `CONTENT_SET` variable (set to `test`), Drizzle and drizzle-kit configured, Vitest with `@cloudflare/vitest-pool-workers`, and the npm scripts `CLAUDE.md` names (`dev`, `test`, `typecheck`, `db:generate`, `db:migrate:local`). One placeholder page and one test, so CI's `check` job starts running for real.
+- Delivers: the empty app that runs locally and in CI. Hono with `hono/jsx` server-rendered pages, a shared page layout with Pico CSS and htmx, `wrangler.jsonc` with the D1 binding and the `CONTENT_SET` variable (set to `test`), Drizzle and drizzle-kit configured, Vitest with `@cloudflare/vitest-plugin` (the new name of `@cloudflare/vitest-pool-workers`), and the npm scripts `CLAUDE.md` names (`dev`, `test`, `typecheck`, `db:generate`, `db:migrate:local`). One placeholder page and one test, so CI's `check` job starts running for real.
 - Sets the layout later units share: routes for each screen in their own file under `src/routes/`, game logic in `src/game/`, content in `src/content/`, each registered in `src/index.ts` with one line, so parallel units rarely touch the same lines.
 
 ### 1.02 Data and content (`02-data-and-content.md`)

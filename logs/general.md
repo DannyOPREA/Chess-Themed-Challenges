@@ -114,3 +114,17 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 - The plan gives no target times, only the test run at 18:00 UK on Thursday 2026-10-08. Why: Danny asked for this, so that the coordinator doesn't time its work to a schedule and works non-stop until Danny says to stop. An earlier draft had targets of 13:00 and 16:00 on Thursday.
 - The whole-app check is not a unit. Why: the working agreement logs its fixes in the units they touch; the check itself is logged here.
 - The switch to the real content is planned now as unit 4.01, but built only when Danny says. Why: it clears all game data in production, and its timing depends on the Thursday test run.
+
+## 2026-10-07: Test package renamed in the plan
+
+**Done**
+- `docs/phases.md` (unit 1.01) and `CLAUDE.md` now name `@cloudflare/vitest-plugin`, in the scaffold PR.
+
+**Worked**
+- Nothing to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Use `@cloudflare/vitest-plugin`. Why: it is Cloudflare's new name for `@cloudflare/vitest-pool-workers`, which is deprecated and gets no more updates. The same package, so not a stack swap.
