@@ -128,3 +128,76 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 - Its notes taken: README step 5 now names the setting as Cloudflare's docs do (**Build variables and secrets**), and step 6 says a retried build picks up the secret, since the docs say a retry uses the settings as they are when it is retried. Why: both make the steps match the dashboard and docs.
 - Its notes left: a secret that is only spaces passes the check, and `CLOUDFLARE_API_KEY` plus `CLOUDFLARE_EMAIL` would beat the token if both were set. Why: Danny pastes the value with the dashboard's copy button, and Workers Builds sets neither of the others.
 - The name `DEPLOY_API_TOKEN` and the build-secret approach were Claude's choices, not Danny's. Why recorded: logs say who decided (`logs/README.md` rule 6).
+
+## 2026-10-07: First real builds failed on the custom token
+
+**Done**
+- The first two real builds (after PR #18, and Danny's retry with a freshly rolled token) failed straight away. `wrangler d1 migrations apply` got "Authentication error [code: 10000]" on `/accounts/…/d1/database/chess-crawl`, then "Invalid access token [code: 9109]" on `/accounts`. Danny pasted both logs in the thread.
+- Moved the deploy command into `scripts/deploy.sh`: it uses `DEPLOY_API_TOKEN` when set and otherwise the token Workers Builds provides, and first prints the names of the build's `CLOUDFLARE_*` and `CF_*` variables and which token it chose.
+- Checked with a fake `wrangler` on `PATH`: the build's token is used without the secret, the secret's token with it, and a failed migration stops the script (exit 3) before `wrangler deploy`.
+
+**Worked**
+- The fail-fast check from the previous entry passed, so the secret reached the build.
+
+**Didn't work**
+- The custom token was rejected as invalid twice, the second time just after Danny rolled it and pasted the new value. A copying mistake twice in a row is unlikely, so the cause is probably the build environment. Workers Builds may route API calls, or set other variables, in a way that only its own token works with; that is inferred, not seen.
+- Never tested: whether the token Workers Builds creates can already use D1. Step 5 assumed it couldn't, from Cloudflare's list of its permissions. But Cloudflare's own Deploy button docs run `wrangler d1 migrations apply DB --remote` in the deploy script of exactly this kind of build, and Danny saw D1 Read offered on that token.
+
+**Decisions**
+- Try the build's own token next, with the custom token optional. Why: it is the setup Cloudflare's docs show for D1 migrations in Workers Builds. If it lacks D1, the log will now say so plainly.
+- Print the names of the Cloudflare variables in the build log. Why: if the next build fails too, the log shows whether Workers Builds sets something such as a custom API address, without showing any secret.
+- Brings back the fallback the code review removed in the entry before last. Why: the fail-fast check did its job; the fallback is now the main path being tested, and the new log lines say which token was used, which answers the code review's worry about a confusing error.
+- A script file instead of a longer one-liner in `package.json`. Why: it is now several steps with comments, which don't fit in JSON.
+
+## 2026-10-07: Code review of the build-token change
+
+**Done**
+- Ran `/code-review` at `high` on PR #19 and fixed its findings as below. Rechecked `scripts/deploy.sh` with a fake `wrangler`: both tokens, a secret with a space and newline around it, a secret of spaces only (falls back to the build's token), and a failing migration (stops with the step 5 hint, exit 1).
+
+**Worked**
+- Nothing more to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Whitespace is now stripped from `DEPLOY_API_TOKEN`, and a secret that is only whitespace counts as unset. Why: API tokens contain none, and the reviewer pointed out that a stray space or newline would be sent as part of the token. That may also be what made Cloudflare call the token invalid twice; the next build will show.
+- Variable names are listed from awk's `ENVIRON` keys, not by grepping `env`. Why: grepping `env` can print a line from inside a multi-line value.
+- A failed migration prints a pointer to README step 5. Why: wrangler's own auth error doesn't say what to do.
+- Sessions are also denied `sh scripts/deploy.sh`, `bash scripts/deploy.sh` and `./scripts/deploy.sh`. Why: the deploy steps now live in that file, and `npm run deploy` was the only form denied (`CLAUDE.md` rule 7).
+- README step 5 says to delete an existing `DEPLOY_API_TOKEN` to try the build's own token, and step 6 no longer says the first build fails "because step 5 wasn't done". Why: step 5 is now optional, so the old wording contradicted it.
+- The plan's status is back to In progress, its Tests list the script check, and "Done when" now needs a successful build on `main`. Why: the unit's goal, deploys on every push, isn't met yet.
+- The secret's token stays in use for `wrangler deploy` too, not only for the migrations. Why: with no `database_id`, `wrangler deploy` also looks the database up by name, which needs D1; a token without D1 would fail on the first deploy over the Hello World Worker, which has no D1 binding yet.
+
+## 2026-10-07: Unit review of the build-token change
+
+**Done**
+- Ran the `unit-reviewer` agent on PR #19. Verdict: fix needed, no Blocking findings, four Should fix. All four fixed as below. Typecheck, tests (285) and `wrangler build` passed in its run.
+- Rechecked the token part of `scripts/deploy.sh` on its own, without the `wrangler` calls (the session's deny rules now block running the script, which is what they are for): a clean token, whitespace around and inside, whitespace only, a non-breaking space, and a token in quotes.
+
+**Worked**
+- The reviewer reproduced Danny's two errors exactly against a local fake API with a fake token (`wrangler d1 info`, no `--remote`). The 9109 on `/accounts` comes from Wrangler's automatic `whoami` after the 10000. A valid token that only lacks D1, or belongs to another account, would get a normal answer from `/accounts`, so "Invalid access token" means Cloudflare didn't accept the value at all (inferred from Wrangler's code, not seen).
+
+**Didn't work**
+- The previous entry's theory that whitespace made Cloudflare reject the token was wrong for trailing whitespace: Wrangler sends the header through undici, which trims spaces, tabs and newlines at both ends, and a leading newline gives a local error instead of 9109. Only a leading space or tab, or whitespace inside the value, would have reached Cloudflare. Also a slip in the entry before that: the fail-fast check it mentions was built two entries earlier, not in the one just before.
+
+**Decisions**
+- README step 5 now says first, without any condition, to delete an existing `DEPLOY_API_TOKEN` and retry. Why: Danny still has it set, so the old wording ("skip unless a log says the build's own token was used") would never have led to the test this change exists for. The failure it names is now "an authentication error on a `/d1/` request", since a token with D1 Read could pass the name lookup and fail later on a query.
+- The script prints the cleaned token's length, how many whitespace characters it removed, and a warning when the token has anything but letters, digits, `_` and `-`. Why: removing whitespace silently hid what was wrong, and the likeliest causes of 9109 left are a value that isn't the token (an ID, part of it, quotes, a non-breaking space), which this shows without showing the value.
+- The variable listing also covers `WRANGLER_*`, `WORKERS_*` and the proxy variables. Why: `WRANGLER_API_ENVIRONMENT` and `HTTPS_PROXY` change where Wrangler sends its calls, which is the other theory left; names only, as before.
+- Step 6 says the deploy step's first lines name the token used. The plan's Work 1 and 5 and its Tests now describe all of the above.
+- Not done: `wrangler whoami` in the script. Why: the migrations call already shows whether the token works, and the new length and character check covers "is this a real token" without printing account details.
+
+## 2026-10-07: Second unit review of the build-token change
+
+**Done**
+- Ran the `unit-reviewer` agent again on PR #19 at 30228a4. Verdict: pass, no Blocking or Should fix findings; it confirmed all four fixes from the first pass.
+
+**Worked**
+- It ran the token part of the script with 14 inputs under dash and bash, in both the C and UTF-8 locales, and the token's value never appeared in the output. A `cfat_…` style token passes without a warning.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Left as they are, from its notes: under dash the length counts bytes, so a non-breaking space shows as two extra characters (the warning still fires), and the deny list doesn't cover forms such as `dash scripts/deploy.sh`. Why: neither changes what the build does, and the plan already says rule 7 is the real guard.
