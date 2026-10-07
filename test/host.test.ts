@@ -72,11 +72,12 @@ describe('host login', () => {
 
   it('protects every host path, including the fragments and actions', async () => {
     const player = await addPlayer('Player A')
-    for (const path of ['/host/players', `/host/players/${player.id}`, '/host/qr', '/host/all', '/host/phase?to=game_on']) {
+    for (const path of ['/host/players', `/host/players/${player.id}`, '/host/qr', '/host/all', '/host/phase?to=game_on', '/host/reset']) {
       expect((await get(path, {})).status, path).toBe(401)
     }
     expect((await post('/host/all', {}, { Authorization: auth('wrong') })).status).toBe(401)
     expect((await post(`/host/players/${player.id}/remove`, {}, { Authorization: '' })).status).toBe(401)
+    expect((await post('/host/reset', { phase: 'lobby', lastPlayerId: String(player.id), playerCount: '1' }, { Authorization: '' })).status).toBe(401)
     expect(await allPlayers()).toHaveLength(1)
   })
 
@@ -463,5 +464,169 @@ describe('emergency show all', () => {
     const html = await (await post('/host/all')).text()
     expect(html).toMatch(/Player A<\/td><td>Challenge 3<\/td><td>Decoy 7<\/td><td>Yes/)
     expect(html).toMatch(/Player B<\/td><td>Not yet<\/td><td>Not yet<\/td><td>No/)
+  })
+})
+
+describe('resetting the game', () => {
+  // Joins (or rejoins) through the join page, as a phone does, and returns its cookie.
+  const join = async (name: string, pin = '1234') => {
+    const res = await exports.default.fetch(`${ORIGIN}/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: ORIGIN },
+      body: new URLSearchParams({ name, pin }).toString(),
+      redirect: 'manual',
+    })
+    expect(res.status).toBe(303)
+    const cookie = res.headers
+      .getSetCookie()
+      .find((c) => c.startsWith('player='))
+      ?.split(';')[0]
+    if (!cookie) throw new Error('no player cookie was set')
+    return cookie
+  }
+
+  // Opens the confirm page and taps "Yes, reset the game", sending its hidden fields.
+  const openReset = async () => {
+    const html = await (await get('/host/reset')).text()
+    const field = (name: string) => new RegExp(`name="${name}" value="([^"]*)"`).exec(html)?.[1] ?? ''
+    return { phase: field('phase'), lastPlayerId: field('lastPlayerId'), playerCount: field('playerCount') }
+  }
+  const reset = async () => post('/host/reset', await openReset())
+
+  it('is offered on the host page', async () => {
+    const html = await (await get('/host')).text()
+    expect(html).toContain('href="/host/reset"')
+    expect(html).toContain('Reset the game')
+  })
+
+  it('asks the host to confirm first, changing nothing', async () => {
+    await setPhase('game_on')
+    await addPlayer('Player A', { challenge: 1, decoy: 1 })
+    const html = await (await get('/host/reset')).text()
+    expect(html).toContain('Reset the game?')
+    expect(html).toMatch(/This can(&#39;|')t be undone\./)
+    expect(html).toContain('method="post" action="/host/reset"')
+    expect(html).not.toMatch(/Challenge 1|Decoy 1/)
+    expect(await allPlayers()).toHaveLength(1)
+    expect(await getPhase(db)).toBe('game_on')
+  })
+
+  it('deletes every player and accusation and goes back to the Lobby, from every phase', async () => {
+    for (const phase of ['lobby', 'game_on', 'accusations_closed', 'reveal'] as const) {
+      await setPhase(phase)
+      const a = await addPlayer(`Player A ${phase}`, phase === 'lobby' ? undefined : { challenge: 1, decoy: 1 })
+      const b = await addPlayer(`Player B ${phase}`, phase === 'lobby' ? undefined : { challenge: 2, decoy: 2, completed: true })
+      if (phase !== 'lobby') {
+        await db.insert(accusations).values([
+          { accuserId: a.id, accusedId: b.id, challenge: 2 },
+          { accuserId: b.id, accusedId: a.id, challenge: 5 },
+        ])
+      }
+      const res = await reset()
+      expect(res.status).toBe(303)
+      expect(res.headers.get('Location')).toBe('/host?done=reset')
+      expect(await allPlayers()).toEqual([])
+      expect(await db.select().from(accusations).all()).toEqual([])
+      expect(await getPhase(db)).toBe('lobby')
+    }
+  })
+
+  it('says so on the host page afterwards', async () => {
+    await reset()
+    const html = await (await get('/host?done=reset')).text()
+    expect(html).toContain('The game was reset.')
+    expect(html).toContain('Phase: Lobby')
+    expect(html).toContain('Nobody has joined yet.')
+  })
+
+  it('resets an empty game', async () => {
+    expect((await reset()).headers.get('Location')).toBe('/host?done=reset')
+    expect(await getPhase(db)).toBe('lobby')
+  })
+
+  it('says the game was reset on a double tap, not that it was refused', async () => {
+    await setPhase('game_on')
+    await addPlayer('Player A', { challenge: 1, decoy: 1 })
+    const page = await openReset()
+    expect((await post('/host/reset', page)).headers.get('Location')).toBe('/host?done=reset')
+    expect((await post('/host/reset', page)).headers.get('Location')).toBe('/host?done=reset')
+    expect(await allPlayers()).toEqual([])
+    expect(await getPhase(db)).toBe('lobby')
+  })
+
+  it('does nothing from a stale confirm page: a join, a removal or a phase change since', async () => {
+    const changes: ((first: { id: number }) => Promise<unknown>)[] = [
+      () => addPlayer('Player C'),
+      (first) => post(`/host/players/${first.id}/remove`),
+      () => setPhase('game_on'),
+    ]
+    for (const change of changes) {
+      await resetDb()
+      // The first player, not the last, so removing them leaves the highest id as it was.
+      const first = await addPlayer('Player A')
+      await addPlayer('Player B')
+      const stale = await openReset()
+      await change(first)
+      const before = { players: await allPlayers(), phase: await getPhase(db) }
+      const res = await post('/host/reset', stale)
+      expect(res.headers.get('Location')).toBe('/host?done=reset-unchanged')
+      expect({ players: await allPlayers(), phase: await getPhase(db) }).toEqual(before)
+    }
+  })
+
+  it('ignores a second tap on the same page', async () => {
+    const page = await openReset()
+    expect((await post('/host/reset', page)).headers.get('Location')).toBe('/host?done=reset')
+    await addPlayer('Player A')
+    expect((await post('/host/reset', page)).headers.get('Location')).toBe('/host?done=reset-unchanged')
+    expect(await allPlayers()).toHaveLength(1)
+  })
+
+  it('ignores a tampered form', async () => {
+    await addPlayer('Player A')
+    const forms: Record<string, string>[] = [
+      {},
+      { phase: 'lobby', lastPlayerId: '1' },
+      { phase: 'nope', lastPlayerId: '1', playerCount: '1' },
+      { phase: 'lobby', lastPlayerId: '-1', playerCount: '1' },
+    ]
+    for (const form of forms) {
+      expect((await post('/host/reset', form)).headers.get('Location')).toBe('/host?done=reset-unchanged')
+    }
+    expect(await allPlayers()).toHaveLength(1)
+  })
+
+  it('sends logged-in phones back to the join screen, and the same name joins again as a new player', async () => {
+    const cookie = await join('Sam')
+    const [before] = await allPlayers()
+    expect((await exports.default.fetch(`${ORIGIN}/play`, { headers: { Cookie: cookie }, redirect: 'manual' })).status).toBe(200)
+
+    await reset()
+
+    const page = await exports.default.fetch(`${ORIGIN}/play`, { headers: { Cookie: cookie }, redirect: 'manual' })
+    expect(page.status).toBe(303)
+    expect(page.headers.get('Location')).toBe('/')
+    const poll = await exports.default.fetch(`${ORIGIN}/play`, {
+      headers: { Cookie: cookie, 'HX-Request': 'true' },
+      redirect: 'manual',
+    })
+    expect(poll.headers.get('HX-Redirect')).toBe('/')
+
+    await join('Sam', '5678')
+    const [after] = await allPlayers()
+    expect(after?.id).toBeGreaterThan(before!.id)
+    expect(await verifyPin('5678', after!)).toBe(true)
+  })
+
+  it('needs the host password and refuses a cross-site post', async () => {
+    await addPlayer('Player A')
+    expect((await get('/host/reset', {})).status).toBe(401)
+    expect((await post('/host/reset', await openReset(), { Authorization: auth('wrong') })).status).toBe(401)
+    const res = await post('/host/reset', await openReset(), {
+      Origin: 'https://other.example',
+      'Sec-Fetch-Site': 'cross-site',
+    })
+    expect(res.status).toBe(403)
+    expect(await allPlayers()).toHaveLength(1)
   })
 })

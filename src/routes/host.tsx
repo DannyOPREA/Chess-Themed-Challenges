@@ -11,10 +11,12 @@ import { createDb } from '../db/client'
 import { getPhase } from '../db/game'
 import {
   changePhase,
+  gameMarker,
   getPlayer,
   listPlayers,
   listPlayersWithSecrets,
   removePlayer,
+  resetGame,
   resetPin,
   setCompletion,
 } from '../db/host'
@@ -25,7 +27,8 @@ import { PHASE_LABELS, type Phase, phaseAllows, phaseChangesFrom, phaseSchema } 
 // HOST_PASSWORD secret. Danny also plays, so nothing here shows a challenge or
 // decoy except the emergency "show all" page, and completions are only shown
 // on each player's own page, not in the list. Every action that can't be
-// undone (a phase change, removing a player, show all) has a confirm step.
+// undone (a phase change, removing a player, resetting the game, show all)
+// has a confirm step.
 export const host = new Hono<AppEnv>()
 
 // `/host/*` also matches `/host` itself.
@@ -59,6 +62,9 @@ const NOTICES = {
   pin: 'New PIN saved. Tell the player their new PIN.',
   completion: 'Completion saved.',
   'completion-refused': "Completions can't be changed right now.",
+  reset: 'The game was reset.',
+  'reset-unchanged':
+    "The game wasn't reset: it has changed since that page was opened. Tap Reset the game again if you still want to.",
 } as const
 type NoticeKey = keyof typeof NOTICES
 
@@ -141,6 +147,15 @@ host.get('/host', async (c) => {
         <h2>Emergency</h2>
         <a href="/host/all" role="button" class="contrast outline">
           Show all challenges and decoys
+        </a>
+      </section>
+      <section>
+        <h2>Reset</h2>
+        <p>
+          <small>Starts again from an empty Lobby, for example after a test game.</small>
+        </p>
+        <a href="/host/reset" role="button" class="contrast outline">
+          Reset the game
         </a>
       </section>
     </>,
@@ -345,6 +360,62 @@ host.get('/host/qr', (c) => {
     { title: 'Scan to join' },
   )
 })
+
+// ---- Reset the game ----
+
+// The confirm page carries where the game was when it was opened, so a stale
+// page (an old tab, or one the browser shows again without reloading) can't
+// wipe a game that has moved on.
+host.get('/host/reset', async (c) => {
+  const seen = await gameMarker(createDb(c.env.DB))
+  return c.render(
+    <>
+      <p>
+        <a href="/host">Back to the host page</a>
+      </p>
+      <h1>Reset the game?</h1>
+      <p>
+        Every player and every accusation is deleted, and the game goes back to the Lobby. Phones go back to the join
+        screen when their screen next updates (a phone on the results screen, when it is next tapped or reloaded), and
+        players join again with a name and PIN, as new players. The host password stays the same.
+      </p>
+      <p>
+        <strong>This can't be undone.</strong>
+      </p>
+      <form method="post" action="/host/reset">
+        <input type="hidden" name="phase" value={seen.phase} />
+        <input type="hidden" name="lastPlayerId" value={String(seen.lastPlayerId)} />
+        <input type="hidden" name="playerCount" value={String(seen.playerCount)} />
+        <button type="submit" class="contrast">
+          Yes, reset the game
+        </button>
+      </form>
+      <a href="/host" role="button" class="secondary">
+        Cancel
+      </a>
+    </>,
+    { title: 'Reset the game?' },
+  )
+})
+
+host.post(
+  '/host/reset',
+  zValidator(
+    'form',
+    z.object({
+      phase: phaseSchema,
+      lastPlayerId: z.coerce.number().int().nonnegative(),
+      playerCount: z.coerce.number().int().nonnegative(),
+    }),
+    (r, c) => {
+      if (!r.success) return c.redirect('/host?done=reset-unchanged', 303)
+    },
+  ),
+  async (c) => {
+    const reset = await resetGame(createDb(c.env.DB), c.req.valid('form'))
+    return c.redirect(reset ? '/host?done=reset' : '/host?done=reset-unchanged', 303)
+  },
+)
 
 // ---- Emergency "show all" ----
 

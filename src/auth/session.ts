@@ -11,7 +11,9 @@ import type { AppEnv } from '../env'
 // The phone remembers its player in a cookie signed with COOKIE_SECRET
 // (docs/scope.md, "Joining and rejoining"). It holds the player's id and the
 // time they joined, so a phone holding a removed player's cookie, or one from
-// an earlier game, is treated as logged out rather than as someone else.
+// an earlier game, is treated as logged out rather than as someone else. The
+// host's reset (unit 3.06) relies on this: it deletes every player but keeps
+// ids counting up, so no old cookie can match a new player.
 
 const COOKIE = 'player'
 
@@ -23,8 +25,9 @@ const cookieOptions = (c: Context): CookieOptions => ({
   httpOnly: true,
   secure: new URL(c.req.url).protocol === 'https:',
   sameSite: 'Lax',
-  // Long enough to outlast one night out; game data cleared in between (unit
-  // 4.01) logs everyone out anyway, because the join time no longer matches.
+  // Long enough to outlast one night out; game data cleared in between (the
+  // host's reset, unit 3.06, or unit 4.01) logs everyone out anyway, because
+  // the player id no longer matches anyone.
   maxAge: 7 * 24 * 60 * 60,
 })
 
