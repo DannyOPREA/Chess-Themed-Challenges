@@ -73,3 +73,19 @@ Plan: [docs/phase-2-game-rules/02-assignment.md](../../docs/phase-2-game-rules/0
 - Should fix: replace the whole-table check with the per-joiner `isLeastHeld`, with a test for the 21-minus-2 case. Why: the check must always be satisfiable by a fresh pick, or the caller loops.
 - Should fix: the suggested pattern for 3.01 now says to leave the joiner out of the list when re-picking and to cap the retries. Why: otherwise the joiner's own clashing numbers count as taken, and two racing joiners could collide again.
 - Notes taken into the plan: 3.04's guarded update checks `decoy` too, and changes the phase in the same batch; 3.01 assigns any player it finds with `null` numbers during Game on, covering someone who joins between 3.04's read and its write. Why: both are cheap for those units to do and easy to miss.
+
+## 2026-10-07: Third unit review and merge
+
+**Done**
+- Ran `unit-reviewer` a third time. Verdict: Pass, nothing Blocking or Should fix. Took its notes into the plan, merged `main` (unit 2.01) into the branch, and merged the PR.
+
+**Worked**
+- The reviewer checked the merge with `main` in a scratch copy before it was done: no conflicts, typecheck clean, all tests passing.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Note: two joiners re-picking in lockstep can collide every round (the reviewer reproduced it with adversarial timing). Added to the suggested pattern for 3.01: a short random wait before each re-pick, and when the cap is reached, keep the numbers, log a warning and let the join succeed. Why: it needs phones joining within milliseconds during Game on, and a rare shared challenge is better than a player locked out.
+- Note: 3.04's suggested guard is now `challenge IS NULL OR decoy IS NULL`. Why: it matches `assignPlayers`, which fills in either half.
+- Notes: the plan's wording for when `isLeastHeld` fails, and the missing "ignores players not yet assigned" test in the plan's list, fixed. Why: keep the plan matching the code.
