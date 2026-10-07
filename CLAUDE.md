@@ -33,7 +33,7 @@ The project scaffold must provide these npm scripts. Keep the names: the session
 2. **No spoilers.** All game logic runs on the server. Before the reveal, nothing sent to a player's browser may contain another player's challenge, decoy, completion status, or whether any accusation is right. The host page never shows challenges or decoys, except behind the clearly marked emergency "show all" button.
 3. **Scoring and detection follow `docs/scope.md` exactly.** Tests must cover scoring, detection, unique assignment and late joiners.
 4. **Content** (20 challenges, decoys and hints) lives in the repo, with no editing screen. There are two sets: `test` (placeholders such as "Challenge 1", "Decoy 1", "Hint for Challenge 1") and `real` (Danny's list). The Worker setting `CONTENT_SET` picks one and starts as `test`. Development, automated tests and the Thursday test run all use `test`. Switching to `real` is a single PR that also clears all game data. See `docs/scope.md`.
-5. **Real content must never appear anywhere public**: not in test fixtures, screenshots, PR descriptions, commit messages or logs. This repo is public, so don't commit the real content until Danny has made the repo private.
+5. **Keep the real content out of anything testers might see**: test fixtures, screenshots, PR descriptions and commit messages use the `test` set. The repo is public by Danny's choice, and committing the real content file is fine.
 6. Anything under "Not in scope" in `docs/scope.md` needs Danny's OK first.
 7. **Never deploy from a session.** Don't run `wrangler deploy`, `wrangler secret put` or any `--remote` command. Production changes only through Workers Builds when `main` changes.
 8. Before calling work done, `npm run typecheck` and `npm test` must pass.

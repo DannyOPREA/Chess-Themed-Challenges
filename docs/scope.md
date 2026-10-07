@@ -12,7 +12,7 @@ This is a mobile web app. Each player is secretly given one chess-themed challen
 - Fixes made on import: the stray "***" is removed from hint 10, and "awkardly" is corrected to "awkwardly" in hint 14.
 - **Test content for the Thursday test run (Danny, 2026-10-07).** The test must not give anything away, so the app also has a placeholder set: "Challenge 1" to "Challenge 20", "Decoy 1" to "Decoy 20", and "Hint for Challenge 1" to "Hint for Challenge 20", with matching placeholder descriptions.
 - A single setting in the Worker config, `CONTENT_SET`, picks `test` or `real`. It starts as `test`. After the Thursday test, one change (a PR Danny merges) switches it to `real`. The same change clears all game data (players, completions, accusations, phase back to Lobby), so Saturday starts from an empty lobby.
-- Real content must never appear anywhere public: not in a public repo, test fixtures, screenshots, PR descriptions or commit messages. Local development and automated tests use the test set.
+- Local development, automated tests, screenshots and PR descriptions use the test set. The repo stays public (Danny's choice, for branch protection); committing the real content file is fine.
 
 ## Game phases
 
