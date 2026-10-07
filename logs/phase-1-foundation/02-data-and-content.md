@@ -44,3 +44,29 @@ Plan: [docs/phase-1-foundation/02-data-and-content.md](../../docs/phase-1-founda
 - Phase changes: each phase to the next, plus Accusations closed back to Game on. Why: the scope has the host move phases by hand, and closing accusations by mistake is the likeliest slip on the night; reopening it loses nothing. Game on can't go back to the Lobby, because assignment never changes once made, and the Reveal is final, because everything is public from then on.
 - Joining is allowed in Lobby and Game on only; rejoining in every phase. Why: the scope allows late joiners during Game on; a player who switches phones after accusations close still needs to get back in to see the reveal.
 - `getPhase` is here; changing the phase is left to unit 3.04. Why: every screen reads the phase, but only the host page changes it, together with assigning the lobby.
+
+## 2026-10-07: Code review
+
+**Done**
+- Ran `/code-review` at `high` on the branch's diff against `main`. Ten findings, handled as follows:
+  1. `nameKey` didn't ignore spaces, so "Dan" and "Dan " (a phone keyboard's trailing space) would be two players. Fixed: it trims, collapses repeated spaces and uses NFKC before lower-casing. Tested.
+  2. Host completion fixes at the Reveal went beyond `docs/scope.md`, which calls the Reveal the final leaderboard. Fixed: allowed in Game on and Accusations closed only.
+  3. Reopening accusations (Accusations closed back to Game on) went beyond `docs/scope.md`, which has the host move from one phase to the next and freezes everything once accusations close. Fixed: phases only move forward. This reverses two decisions in the Build entry above; see Decisions.
+  4. Nothing in the database stopped an assignment changing. Fixed: `migrations/0002_assignment_final.sql` adds a trigger that refuses it, while assigning an unassigned player still works. Tested.
+  5. A player could be marked completed before being assigned. Fixed: a check refuses it; another check makes challenge and decoy assigned together. Tested.
+  6. `test/content.test.ts` quoted a word from a real hint, against rule 5 and the plan. Fixed: the test only checks that no real hint has asterisks; the spelling fix was checked at conversion.
+  7. The schema imported `CONTENT_SIZE` from the content module, so `db:generate` loaded both content files. Fixed: `CONTENT_SIZE` is in `src/content/size.ts`.
+  8. No index on `accusations.accused_id`. Fixed: added, since "who detected this player" filters on it.
+  9. `resetDb` used raw SQL. Fixed: it uses the Drizzle tables, with a note that a new table must be added there.
+  10. The plan's status and the log's review record weren't current. Done in this PR before merging.
+- Regenerated the migrations from scratch rather than adding a fourth, since none has reached `main` or production.
+
+**Worked**
+- The trigger applies through both `wrangler d1 migrations apply` and the test runner's `applyD1Migrations`. Typecheck and 58 tests pass.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Follow `docs/scope.md` exactly on phases: forward only, and host completion fixes up to Accusations closed. Why: going back, or changing scores at the "final" leaderboard, is new game behaviour that needs Danny's OK, and the scope's version works. A mis-tapped phase change is better guarded by a confirmation on the host page (unit 3.04) than by an undo.
+- Enforce "assignment never changes" with a trigger. Why: it is a scope rule that a later unit's assignment code (2.02, 3.01, 3.04) could break with a careless `UPDATE`; the trigger turns that into a failed write and a failing test.

@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
-import { check, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { CONTENT_SIZE } from '../content'
+import { check, index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { CONTENT_SIZE } from '../content/size'
 import { PHASES } from '../game/phases'
 
 // The Drizzle schema. `npm run db:generate` turns changes here into a SQL
@@ -35,8 +35,8 @@ export const players = sqliteTable(
     // The 4-digit PIN as a salted SHA-256 hash, both hex (unit 3.01).
     pinHash: text('pin_hash').notNull(),
     pinSalt: text('pin_salt').notNull(),
-    // Null until assigned: at the start of Game on, or on joining after it.
-    // Never changed once set.
+    // Null until assigned, together: at the start of Game on, or on joining
+    // after it. Never changed once set; a trigger in migrations/0002 refuses it.
     challenge: integer('challenge'),
     decoy: integer('decoy'),
     completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
@@ -47,6 +47,8 @@ export const players = sqliteTable(
   () => [
     check('players_challenge_valid', inContentRange('challenge')),
     check('players_decoy_valid', inContentRange('decoy')),
+    check('players_assigned_together', sql`(challenge is null) = (decoy is null)`),
+    check('players_completed_when_assigned', sql`completed = 0 or challenge is not null`),
   ],
 )
 
@@ -69,6 +71,8 @@ export const accusations = sqliteTable(
     primaryKey({ columns: [t.accuserId, t.accusedId] }),
     check('accusations_not_self', sql`accuser_id <> accused_id`),
     check('accusations_challenge_valid', inContentRange('challenge')),
+    // For "who detected this player" and removing a player.
+    index('accusations_accused_idx').on(t.accusedId),
   ],
 )
 

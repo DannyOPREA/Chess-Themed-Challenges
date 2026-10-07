@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import real from './real.json'
+import { CONTENT_SIZE } from './size'
 import test from './test.json'
 
 // The game's content: challenges (each with its hint) and decoys. Two sets live
@@ -10,7 +11,7 @@ import test from './test.json'
 // Challenges and decoys are identified by number, 1 to CONTENT_SIZE, in the
 // order they appear in the file: challenge n is `challenges[n - 1]`.
 
-export const CONTENT_SIZE = 20
+export { CONTENT_SIZE }
 
 export const CONTENT_SETS = ['test', 'real'] as const
 export type ContentSetName = (typeof CONTENT_SETS)[number]

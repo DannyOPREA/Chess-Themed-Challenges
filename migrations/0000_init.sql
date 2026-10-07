@@ -9,6 +9,7 @@ CREATE TABLE `accusations` (
 	CONSTRAINT "accusations_challenge_valid" CHECK(challenge between 1 and 20)
 );
 --> statement-breakpoint
+CREATE INDEX `accusations_accused_idx` ON `accusations` (`accused_id`);--> statement-breakpoint
 CREATE TABLE `game` (
 	`id` integer PRIMARY KEY NOT NULL,
 	`phase` text DEFAULT 'lobby' NOT NULL,
@@ -27,7 +28,9 @@ CREATE TABLE `players` (
 	`completed` integer DEFAULT false NOT NULL,
 	`joined_at` integer DEFAULT (unixepoch()) NOT NULL,
 	CONSTRAINT "players_challenge_valid" CHECK(challenge between 1 and 20),
-	CONSTRAINT "players_decoy_valid" CHECK(decoy between 1 and 20)
+	CONSTRAINT "players_decoy_valid" CHECK(decoy between 1 and 20),
+	CONSTRAINT "players_assigned_together" CHECK((challenge is null) = (decoy is null)),
+	CONSTRAINT "players_completed_when_assigned" CHECK(completed = 0 or challenge is not null)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `players_name_key_unique` ON `players` (`name_key`);

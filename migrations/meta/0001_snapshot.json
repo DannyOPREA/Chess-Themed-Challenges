@@ -1,6 +1,6 @@
 {
-  "id": "9eea2725-2a9c-4bce-b9b3-2faef6d170bf",
-  "prevId": "6716c7f2-9b38-4088-b372-3e0df579eee8",
+  "id": "ffcabe68-5383-4ef9-b49b-454c898131f4",
+  "prevId": "2481ef82-e582-4e81-b73c-f11bb455eb61",
   "version": "6",
   "dialect": "sqlite",
   "tables": {
@@ -29,7 +29,15 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "accusations_accused_idx": {
+          "name": "accusations_accused_idx",
+          "columns": [
+            "accused_id"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "accusations_accuser_id_players_id_fk": {
           "name": "accusations_accuser_id_players_id_fk",
@@ -202,6 +210,14 @@
         "players_decoy_valid": {
           "name": "players_decoy_valid",
           "value": "decoy between 1 and 20"
+        },
+        "players_assigned_together": {
+          "name": "players_assigned_together",
+          "value": "(challenge is null) = (decoy is null)"
+        },
+        "players_completed_when_assigned": {
+          "name": "players_completed_when_assigned",
+          "value": "completed = 0 or challenge is not null"
         }
       }
     }

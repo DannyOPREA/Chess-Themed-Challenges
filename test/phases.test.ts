@@ -15,7 +15,7 @@ describe('phase rules', () => {
     join: ['lobby', 'game_on'],
     markOwnCompletion: ['game_on'],
     accuse: ['game_on'],
-    hostMarkCompletion: ['game_on', 'accusations_closed', 'reveal'],
+    hostMarkCompletion: ['game_on', 'accusations_closed'],
     seeReveal: ['reveal'],
   }
 
@@ -28,12 +28,14 @@ describe('phase rules', () => {
     }
   }
 
-  it('freezes players once accusations close', () => {
+  it('freezes everything once accusations close, except host completion fixes', () => {
     for (const phase of ['accusations_closed', 'reveal'] as const) {
       expect(phaseAllows(phase, 'accuse')).toBe(false)
       expect(phaseAllows(phase, 'markOwnCompletion')).toBe(false)
       expect(phaseAllows(phase, 'join')).toBe(false)
     }
+    expect(phaseAllows('accusations_closed', 'hostMarkCompletion')).toBe(true)
+    expect(phaseAllows('reveal', 'hostMarkCompletion')).toBe(false)
   })
 })
 
@@ -44,16 +46,11 @@ describe('phase changes', () => {
     expect(canChangePhase('accusations_closed', 'reveal')).toBe(true)
   })
 
-  it('lets the host reopen accusations closed by mistake', () => {
-    expect(canChangePhase('accusations_closed', 'game_on')).toBe(true)
-  })
-
   it('refuses every other change', () => {
     const allowed = new Set([
       'lobby>game_on',
       'game_on>accusations_closed',
       'accusations_closed>reveal',
-      'accusations_closed>game_on',
     ])
     for (const from of PHASES) {
       for (const to of PHASES) {
@@ -61,7 +58,7 @@ describe('phase changes', () => {
       }
     }
     expect(phaseChangesFrom('reveal')).toEqual([])
-    expect(phaseChangesFrom('accusations_closed')).toEqual(['reveal', 'game_on'])
+    expect(phaseChangesFrom('accusations_closed')).toEqual(['reveal'])
   })
 
   it('checks phase names from forms', () => {

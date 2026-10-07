@@ -1,8 +1,8 @@
 {
+  "id": "618c66b5-a65f-4f7a-8ebb-a7105a468bd2",
+  "prevId": "ffcabe68-5383-4ef9-b49b-454c898131f4",
   "version": "6",
   "dialect": "sqlite",
-  "id": "2481ef82-e582-4e81-b73c-f11bb455eb61",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "accusations": {
       "name": "accusations",
@@ -42,28 +42,28 @@
         "accusations_accuser_id_players_id_fk": {
           "name": "accusations_accuser_id_players_id_fk",
           "tableFrom": "accusations",
-          "tableTo": "players",
           "columnsFrom": [
             "accuser_id"
           ],
+          "tableTo": "players",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "accusations_accused_id_players_id_fk": {
           "name": "accusations_accused_id_players_id_fk",
           "tableFrom": "accusations",
-          "tableTo": "players",
           "columnsFrom": [
             "accused_id"
           ],
+          "tableTo": "players",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -225,9 +225,9 @@
   "views": {},
   "enums": {},
   "_meta": {
+    "columns": {},
     "schemas": {},
-    "tables": {},
-    "columns": {}
+    "tables": {}
   },
   "internal": {
     "indexes": {}

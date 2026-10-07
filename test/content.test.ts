@@ -79,10 +79,11 @@ describe('the test set', () => {
 })
 
 describe('the real set', () => {
-  it('has the two fixes from docs/scope.md', () => {
-    const hints = loadContent('real').challenges.map((c) => c.hint)
-    expect(hints[9]).not.toContain('*')
-    expect(hints[13]).not.toContain('awkardly')
-    expect(hints[13]).toContain('awkwardly')
+  // Only the stray-asterisks fix is checked here, so no real text is quoted in
+  // a test; the spelling fix was checked when the file was converted (see the log).
+  it('has no stray asterisks', () => {
+    for (const challenge of loadContent('real').challenges) {
+      expect(challenge.hint).not.toContain('*')
+    }
   })
 })

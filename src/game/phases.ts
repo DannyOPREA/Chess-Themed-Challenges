@@ -27,7 +27,7 @@ export type PhaseAction =
   // A player makes, changes or clears an accusation.
   | 'accuse'
   // The host marks or unmarks a player's completion. Still allowed once
-  // accusations close, and at the reveal so a late correction fixes the scores.
+  // accusations close (docs/scope.md); the Reveal is final.
   | 'hostMarkCompletion'
   // Players see the leaderboard and everyone's breakdown.
   | 'seeReveal'
@@ -36,7 +36,7 @@ const ALLOWED: Record<PhaseAction, readonly Phase[]> = {
   join: ['lobby', 'game_on'],
   markOwnCompletion: ['game_on'],
   accuse: ['game_on'],
-  hostMarkCompletion: ['game_on', 'accusations_closed', 'reveal'],
+  hostMarkCompletion: ['game_on', 'accusations_closed'],
   seeReveal: ['reveal'],
 }
 
@@ -44,13 +44,12 @@ export const phaseAllows = (phase: Phase, action: PhaseAction): boolean =>
   ALLOWED[action].includes(phase)
 
 // The phase changes the host can make: each phase moves on to the next, and
-// accusations can be reopened if they were closed by mistake. Game on can't go
-// back to the lobby, because assignment never changes once made, and the
-// reveal is final, because everything is public from then on.
+// never back (docs/scope.md, "Game phases"). Going back would undo a freeze
+// players have seen, or an assignment that must never change.
 const CHANGES: Record<Phase, readonly Phase[]> = {
   lobby: ['game_on'],
   game_on: ['accusations_closed'],
-  accusations_closed: ['reveal', 'game_on'],
+  accusations_closed: ['reveal'],
   reveal: [],
 }
 

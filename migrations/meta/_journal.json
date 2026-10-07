@@ -5,15 +5,22 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1791396638526,
+      "when": 1791397041622,
       "tag": "0000_init",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1791396639445,
+      "when": 1791397042423,
       "tag": "0001_seed_game",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791397043127,
+      "tag": "0002_assignment_final",
       "breakpoints": true
     }
   ]

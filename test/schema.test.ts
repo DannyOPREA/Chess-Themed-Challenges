@@ -58,16 +58,62 @@ describe('players', () => {
     expect(player.joinedAt).toBeInstanceOf(Date)
   })
 
-  it('have names that are unique ignoring capitals', async () => {
+  it('have names that are unique ignoring capitals and extra spaces', async () => {
     await addPlayer('Player A')
     await refused(addPlayer('PLAYER a'), 'UNIQUE constraint failed: players.name_key')
+    await refused(addPlayer(' Player  A '), 'UNIQUE constraint failed: players.name_key')
     expect(nameKey('Player A')).toBe(nameKey('pLaYeR a'))
+    expect(nameKey('  Player \t A ')).toBe('player a')
+    expect(nameKey('Player A')).not.toBe(nameKey('Player B'))
   })
 
   it('only hold challenge and decoy numbers 1 to 20', async () => {
     await addPlayer('Player A', { challenge: 1, decoy: 20 })
     await refused(addPlayer('Player B', { challenge: 0, decoy: 1 }), 'players_challenge_valid')
     await refused(addPlayer('Player C', { challenge: 1, decoy: 21 }), 'players_decoy_valid')
+  })
+
+  it('get a challenge and a decoy together, or neither', async () => {
+    await refused(
+      db.insert(players).values({ name: 'Player A', nameKey: 'player a', pinHash: 'h', pinSalt: 's', challenge: 1 }),
+      'players_assigned_together',
+    )
+    await refused(
+      db.insert(players).values({ name: 'Player B', nameKey: 'player b', pinHash: 'h', pinSalt: 's', decoy: 1 }),
+      'players_assigned_together',
+    )
+  })
+
+  it('can only be marked completed once assigned', async () => {
+    const lobby = await addPlayer('Player A')
+    await refused(
+      db.update(players).set({ completed: true }).where(eq(players.id, lobby.id)),
+      'players_completed_when_assigned',
+    )
+    const assigned = await addPlayer('Player B', { challenge: 2, decoy: 3 })
+    await db.update(players).set({ completed: true }).where(eq(players.id, assigned.id))
+    await db.update(players).set({ completed: false }).where(eq(players.id, assigned.id))
+  })
+
+  it('keep their challenge and decoy once assigned', async () => {
+    const player = await addPlayer('Player A')
+    await db.update(players).set({ challenge: 5, decoy: 6 }).where(eq(players.id, player.id))
+    await refused(
+      db.update(players).set({ challenge: 7 }).where(eq(players.id, player.id)),
+      'players_assignment_final',
+    )
+    await refused(
+      db.update(players).set({ decoy: 7 }).where(eq(players.id, player.id)),
+      'players_assignment_final',
+    )
+    await refused(
+      db.update(players).set({ challenge: null, decoy: null }).where(eq(players.id, player.id)),
+      'players_assignment_final',
+    )
+    // Other changes, such as a PIN reset or completion, still work.
+    await db.update(players).set({ pinHash: 'new', completed: true }).where(eq(players.id, player.id))
+    const [row] = await db.select().from(players).where(eq(players.id, player.id))
+    expect(row).toMatchObject({ challenge: 5, decoy: 6, pinHash: 'new', completed: true })
   })
 
   it("never get a removed player's id", async () => {
