@@ -43,7 +43,19 @@
       "Bash(wrangler secret *)",
       "Bash(npx wrangler * --remote*)",
       "Bash(wrangler * --remote*)",
-      "Bash(npm run deploy*)"
+      "Bash(npm run deploy*)",
+      "Bash(npx wrangler versions *)",
+      "Bash(wrangler versions *)",
+      "Bash(npx wrangler rollback*)",
+      "Bash(wrangler rollback*)",
+      "Bash(npx wrangler delete*)",
+      "Bash(wrangler delete*)",
+      "Bash(npx wrangler triggers *)",
+      "Bash(wrangler triggers *)",
+      "Bash(npx wrangler d1 create*)",
+      "Bash(wrangler d1 create*)",
+      "Bash(npx wrangler d1 delete*)",
+      "Bash(wrangler d1 delete*)"
     ]
   }
 }

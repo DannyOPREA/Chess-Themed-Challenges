@@ -38,3 +38,26 @@ Plan: [docs/phase-1-foundation/03-deploy-setup.md](../../docs/phase-1-foundation
 - Node 22 pinned in `.node-version`. Why: CI already tested on 22, Wrangler needs at least 22, and Workers Builds defaults to 24 now. One file keeps both on the same version.
 - CI also runs `wrangler deploy --dry-run`. Why: with migrations before deploy, a build that fails after merging could leave the database migrated and the old code running; catching build failures on the PR avoids that. It uploads nothing, so it isn't a deploy.
 - The checklist lives in `README.md`, "Deploying", not in a new file under `docs/`. Why: it's how the project is run rather than a build plan, and `README.md` already says how to run it locally.
+
+## 2026-10-07: Reviews before merging
+
+**Done**
+- Ran `/code-review` at `high` on the branch against `main`, and the `unit-reviewer` agent. Fixed what they found, as below. CI's `check` job, including the new dry-run build, was green on the first commit.
+
+**Worked**
+- The unit reviewer confirmed in Wrangler's own code what the setup relies on: the D1 database is found by name for both migrations and deploy, the confirm prompts answer yes in Workers Builds (it detects `WORKERS_CI`), `wrangler deploy` always runs the `build` command, and the Worker must exist with its secrets before the first deploy. It also ran the dry-run build from a fresh clone and the app at a phone size.
+
+**Didn't work**
+- The earlier entry's reason for turning preview builds off was wrong. Worker Previews, which new Workers Builds projects use, don't inherit the production database; Wrangler 4.148 instead refuses to create a Preview when `wrangler.jsonc` has no `previews` block, so every branch build would fail. Off is still right; the reason is now that they would fail and nobody needs them. The `preview_urls: false` reason (old versions' URLs would run against the live database) stands.
+
+**Decisions**
+- `/code-review`: the deny list didn't cover other Wrangler commands that change production or the account. Fixed: sessions are now also denied `wrangler versions`, `rollback`, `delete`, `triggers`, `d1 create` and `d1 delete`. Why: `CLAUDE.md` rule 7.
+- `/code-review`: migrations run before the deploy, so the old code briefly runs against the new schema, or until the next push if the deploy step fails. Kept the order and added "Migrations reach the live database on their own" to `README.md`: keep migrations additive. Why: the other order has the same gap the other way round (new code against the old schema), and additive migrations make either gap harmless.
+- `/code-review`: drizzle-kit rebuilds a table with `PRAGMA foreign_keys=OFF`, which D1 ignores, so dropping the old table would delete or block the rows that reference it. Documented in the same `README.md` section: check generated SQL for rebuilds, and a unit that needs one plans it and tries it on the local D1 first. Why: no unit needs one yet; the first migration (unit 1.02) only creates tables.
+- `/code-review`: the build token may not be under **My Profile > API Tokens**. Added the account tokens page as a fallback. Why: Cloudflare's docs say Workers Builds uses user tokens today, but the fallback costs one sentence.
+- `/code-review`: a build started on connecting fails before step 5, with no new commit to retry it. Step 6 now says to retry that build. Why: otherwise the first deploy waits for the next merge.
+- `/code-review`: `workers_dev: true` repeats Wrangler's default. Kept. Why: it sits next to `preview_urls` and says where the app lives; without it a reader has to know the default.
+- `/code-review`: the log had no review entry yet. This entry.
+- Unit reviewer, Should fix: the preview builds reason (above), plus the dashboard path to turn them off in case the connect dialog doesn't show it. Both fixed in `README.md` and the plan.
+- Unit reviewer, notes taken: step 2 mentions choosing a `workers.dev` subdomain on a new account, step 6 says how to check the first deploy, and the secrets part warns that changing `COOKIE_SECRET` logs every player out. Why: each saves Danny a question for one sentence.
+- Unit reviewer, note left: a migration whose result reports failure without throwing would let the deploy go ahead. Why: remote D1 errors throw through Wrangler's API calls, so the reviewer judged it can't happen in practice, and guarding against it would mean custom code around Wrangler.
