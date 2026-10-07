@@ -9,7 +9,9 @@ const ErrorPage = ({ heading, text }: { heading: string; text: string }) => (
     <h1>{heading}</h1>
     <p>{text}</p>
     <p>
-      <a href="/">Back to the start</a>
+      <a href="/" role="button">
+        Back to the start
+      </a>
     </p>
   </>
 )

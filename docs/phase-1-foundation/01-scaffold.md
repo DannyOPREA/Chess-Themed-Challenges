@@ -33,7 +33,7 @@ The empty app that runs locally and in CI, on the agreed stack, with the folder 
    - the two secrets declared by name, `HOST_PASSWORD` (host page, unit 3.04) and `COOKIE_SECRET` (signed cookies, unit 3.01), so they are typed in `Env`. Local values come from a git-ignored `.dev.vars` (copy `.dev.vars.example`), test values from `vitest.config.ts`, and production values from the Cloudflare dashboard (unit 1.03).
    - Workers static assets from `public/`, and a build step (`scripts/copy-vendor.mjs`) that copies Pico CSS and htmx from `node_modules` into `public/vendor/` (git-ignored) before `wrangler dev` and `wrangler deploy`
 4. The shared page layout `src/layout.tsx` (a `jsxRenderer`): phone viewport, Pico CSS, htmx, a `<main class="container">`, and a `title` passed as `c.render(content, { title })`.
-5. `src/index.ts`: the Hono app with `secureHeaders()` (referrer policy `same-origin`, so form posts keep their `Origin`), `csrf()` and the layout, one `app.route()` line per screen, and the shared error pages.
+5. `src/index.ts`: the Hono app with `secureHeaders()` on every Worker response (referrer policy `same-origin`, so form posts keep their `Origin`; the `/vendor/` files are served by static assets before the Worker and don't get them), `csrf()` and the layout, one `app.route()` line per screen, and the shared error pages.
 6. A placeholder start page at `/` (`src/routes/home.tsx`), which unit 3.01 replaces with the join page.
 7. Shared error pages (`src/routes/errors.tsx`): a 404 page and a 500 page in the layout, each with a link back to `/`.
 8. Drizzle: `drizzle.config.ts` (SQLite dialect, schema `src/db/schema.ts`, migrations out to `migrations/`), an empty schema for unit 1.02 to fill, and `createDb(c.env.DB)` in `src/db/client.ts`.
@@ -56,6 +56,7 @@ The empty app that runs locally and in CI, on the agreed stack, with the folder 
 
 - `test/home.test.ts`: `/` returns 200 with the layout (the viewport tag, Pico CSS and htmx), and an unknown path returns the 404 page with a link back to `/`.
 - `test/security.test.ts`: form posts from this site get through the CSRF check (with this site as `Origin`, and with `Origin: null` plus `Sec-Fetch-Site: same-origin`, as browsers send), cross-site posts get 403, and the secure headers are sent with `Referrer-Policy: same-origin`.
+- `test/errors.test.tsx`: an error thrown in a route gives the 500 page in the layout without the error's details, and an error a middleware throws on purpose (`basicAuth`'s 401) passes through unchanged.
 - Game rules have no tests in this unit; it has no game logic.
 
 ## Done when

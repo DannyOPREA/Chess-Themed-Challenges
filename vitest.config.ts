@@ -10,6 +10,8 @@ export default defineConfig(async () => {
     plugins: [
       cloudflareTest({
         wrangler: { configPath: './wrangler.jsonc' },
+        // Wrangler still warns "Missing required secrets" when tests start;
+        // these values do reach the tests, so the warning is expected.
         miniflare: {
           bindings: { HOST_PASSWORD: 'test-host-password', COOKIE_SECRET: 'test-cookie-secret' },
         },

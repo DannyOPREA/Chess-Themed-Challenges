@@ -91,3 +91,20 @@ Plan: [docs/phase-1-foundation/01-scaffold.md](../../docs/phase-1-foundation/01-
 - Secrets declared by name in 1.01 instead of 1.03. Why: three units need them and would otherwise conflict on the same lines; declaring a name doesn't need a value until deploy, and `secrets.required` only drives type generation and a local warning.
 - Challenges and decoys are numbered 1 to 20. Why: units 1.02 (content) and 2.02 (assignment) are built in parallel and must agree; the numbers match the test set's names ("Challenge 1").
 - Error pages are in this unit. Why: no other unit owns them, and a player with a stale link should get a way back rather than bare text.
+
+## 2026-10-07: Second unit review and merge
+
+**Done**
+- Ran the unit reviewer again on the fixes. Verdict "Pass": all four first-round findings confirmed fixed in a fresh clone and in a phone-sized Chromium (a plain form post now carries the real `Origin`, `cf-typegen` leaves the generated types unchanged, the secrets reach dev and tests, the plan's Tests section matches).
+- Acted on its notes: added `test/errors.test.tsx` (the 500 page hides error details; `basicAuth`'s 401 passes through `onError`, which unit 3.04 relies on), made the error pages' link a Pico button so it is easier to tap, noted in `vitest.config.ts` that the "Missing required secrets" warning in test output is expected, said in the plan that `/vendor/` files don't get the secure headers, and updated the PR description.
+- Left as is: the untracked `migrations/meta/_journal.json` after `db:generate` on the empty schema (unit 1.02 commits `meta/` with its first migration).
+- `main` merged into the branch is not needed: the branch is already on top of the current `main`.
+
+**Worked**
+- Typecheck and 9 tests pass.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- No secure headers on the `/vendor/` files. Why: they are same-site CSS and JavaScript served by static assets before the Worker runs; adding headers there would need a `_headers` file for no real gain.
