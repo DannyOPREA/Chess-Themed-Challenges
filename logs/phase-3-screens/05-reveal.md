@@ -21,7 +21,7 @@ Plan: [docs/phase-3-screens/05-reveal.md](../../docs/phase-3-screens/05-reveal.m
 ## 2026-10-07: Reveal built, and both reviews
 
 **Done**
-- Everything under the plan's "Work": players with no challenge in `src/game/scoring.ts` (logged in 2.01's log too, with 2.01's plan updated), `loadFinalGame` in `src/db/reveal.ts`, the reveal page at `/reveal` in `src/routes/reveal.tsx`, its route line in `src/index.ts`, `test/reveal.test.ts` (16 tests, including a five-player game worked out by hand) and three new tests in `test/scoring.test.ts`. Typecheck and 236 tests pass.
+- Everything under the plan's "Work": players with no challenge in `src/game/scoring.ts` (logged in 2.01's log too, with 2.01's plan updated), `loadFinalGame` in `src/db/reveal.ts`, the reveal page at `/reveal` in `src/routes/reveal.tsx`, its route line in `src/index.ts`, `test/reveal.test.ts` (15 tests, including a five-player game worked out by hand) and three new tests in `test/scoring.test.ts`. Typecheck and 236 tests pass.
 - The 3.02 Player screen thread confirmed it will show a "See the results" button on `/play` in the Reveal, linking to `/reveal`. The 3.03 Accusations thread confirmed the `accusations` table keeps one row per pair and deletes a cleared guess, which is what the reveal reads.
 - Ran `/code-review` at `high` and the `unit-reviewer` agent (findings and what was done below).
 
