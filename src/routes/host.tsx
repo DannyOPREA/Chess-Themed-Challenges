@@ -15,6 +15,7 @@ import {
   listPlayers,
   listPlayersWithSecrets,
   removePlayer,
+  resetGame,
   resetPin,
   setCompletion,
 } from '../db/host'
@@ -25,7 +26,8 @@ import { PHASE_LABELS, type Phase, phaseAllows, phaseChangesFrom, phaseSchema } 
 // HOST_PASSWORD secret. Danny also plays, so nothing here shows a challenge or
 // decoy except the emergency "show all" page, and completions are only shown
 // on each player's own page, not in the list. Every action that can't be
-// undone (a phase change, removing a player, show all) has a confirm step.
+// undone (a phase change, removing a player, resetting the game, show all)
+// has a confirm step.
 export const host = new Hono<AppEnv>()
 
 // `/host/*` also matches `/host` itself.
@@ -59,6 +61,7 @@ const NOTICES = {
   pin: 'New PIN saved. Tell the player their new PIN.',
   completion: 'Completion saved.',
   'completion-refused': "Completions can't be changed right now.",
+  reset: 'Game reset. Every player and accusation has been deleted and the game is back in the Lobby.',
 } as const
 type NoticeKey = keyof typeof NOTICES
 
@@ -141,6 +144,15 @@ host.get('/host', async (c) => {
         <h2>Emergency</h2>
         <a href="/host/all" role="button" class="contrast outline">
           Show all challenges and decoys
+        </a>
+      </section>
+      <section>
+        <h2>Reset</h2>
+        <p>
+          <small>Starts again from an empty Lobby, for example after a test game.</small>
+        </p>
+        <a href="/host/reset" role="button" class="contrast outline">
+          Reset the game
         </a>
       </section>
     </>,
@@ -344,6 +356,41 @@ host.get('/host/qr', (c) => {
     </>,
     { title: 'Scan to join' },
   )
+})
+
+// ---- Reset the game ----
+
+host.get('/host/reset', (c) =>
+  c.render(
+    <>
+      <p>
+        <a href="/host">Back to the host page</a>
+      </p>
+      <h1>Reset the game?</h1>
+      <p>
+        Every player and every accusation is deleted, and the game goes back to the Lobby. Everyone's phone goes back
+        to the join screen, and players join again with a name and PIN, as new players. The host password stays the
+        same.
+      </p>
+      <p>
+        <strong>This can't be undone.</strong>
+      </p>
+      <form method="post" action="/host/reset">
+        <button type="submit" class="contrast">
+          Yes, reset the game
+        </button>
+      </form>
+      <a href="/host" role="button" class="secondary">
+        Cancel
+      </a>
+    </>,
+    { title: 'Reset the game?' },
+  ),
+)
+
+host.post('/host/reset', async (c) => {
+  await resetGame(createDb(c.env.DB))
+  return c.redirect('/host?done=reset', 303)
 })
 
 // ---- Emergency "show all" ----

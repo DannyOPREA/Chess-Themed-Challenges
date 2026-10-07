@@ -4,7 +4,7 @@
 - Approved by Danny: 2026-10-07
 - Changes to this plan are logged in [`logs/general.md`](../logs/general.md).
 
-This plan splits the build of [`scope.md`](scope.md) into 4 phases and 11 units. One unit is one PR. Each unit's detailed build plan is written in its own PR, at the path shown, from the template in [`README.md`](README.md); this file only fixes what each unit delivers, what it depends on, and the order.
+This plan splits the build of [`scope.md`](scope.md) into 4 phases and 12 units. One unit is one PR. Each unit's detailed build plan is written in its own PR, at the path shown, from the template in [`README.md`](README.md); this file only fixes what each unit delivers, what it depends on, and the order.
 
 ## Key dates
 
@@ -26,6 +26,7 @@ Units in the same wave can run in parallel. A unit starts once every unit it dep
 | B | 1.02 Data and content, 1.03 Deploy setup, 2.01 Scoring and detection, 2.02 Assignment | 1.01 |
 | C | 3.01 Join and rejoin, 3.04 Host page | 1.02 and 2.02 |
 | D | 3.02 Player screen, 3.03 Accusations, 3.05 Reveal | 3.01 (and 2.01 for 3.05) |
+| D2 | 3.06 Host reset button (added 2026-10-07 at Danny's request) | 3.04 |
 | E | Whole-app check (not a unit, see below) | every unit in phases 1 to 3 |
 | F | 4.01 Switch to real content | the Thursday test run and Danny's word |
 
@@ -105,6 +106,13 @@ Each screen polls every 10 seconds with htmx. No unit may send a player another 
 - Depends on: 2.01, 3.01
 - Delivers: the reveal screen, shown only in the Reveal phase: the final leaderboard and each player's breakdown (challenge, decoy, completed or not, who detected them, their correct and wrong accusations), with full challenge descriptions.
 
+### 3.06 Host reset button (`06-host-reset.md`)
+
+- Depends on: 3.04
+- Added on 2026-10-07 at Danny's request, after the whole-app check, so the live app can be cleaned before the Thursday test run.
+- Delivers: a "Reset the game" button on the host page, behind a confirm page, that deletes every player and accusation and puts the game back in the Lobby. Logged-in phones go back to the join screen; the host password is unchanged.
+- Tests: the confirm step changes nothing; the reset from every phase; logged-in phones are sent to the join screen and the same name can join again.
+
 ## Whole-app check
 
 Not a unit. When every unit in phases 1 to 3 is merged, the coordinator starts one thread that runs the `unit-reviewer` agent across the whole app and plays a full game from Lobby to Reveal with several players, working the scores out by hand (`CLAUDE.md`, "Review before merging"). Fixes go in the logs of the units they touch; the check itself is logged in `logs/general.md`.
@@ -116,4 +124,4 @@ Folder: `docs/phase-4-launch/`
 ### 4.01 Switch to real content (`01-switch-to-real-content.md`)
 
 - Depends on: every earlier unit, the Thursday test run, and Danny's word (`CLAUDE.md`, "Stop and ask Danny")
-- Delivers: the single PR that sets `CONTENT_SET` to `real` and clears all game data (players, completions, accusations, phase back to Lobby), so Saturday starts from an empty lobby. Merged only when Danny asks, as the merge freeze is on by then.
+- Delivers: the single PR that sets `CONTENT_SET` to `real` and clears all game data (players, completions, accusations, phase back to Lobby), so Saturday starts from an empty lobby. The clear can reuse unit 3.06's `resetGame`. Merged only when Danny asks, as the merge freeze is on by then.

@@ -196,3 +196,17 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 - Reviewer notes left as they are, for Danny's end-of-build review: the reveal leaderboard's name links are about 20 px tall (the breakdown cards below are large tap targets), and "Back to the host page" is a small text link (the phone's Back button does the same). Why: both are cosmetic, and each code change would mean another full review cycle so close to the test run.
 - Reviewer note passed on to Danny: `wrangler dev` doesn't enforce the free plan's 10 ms CPU limit; local responses took 12 to 21 ms including SQLite and the network, so the real CPU time should be lower (inferred). Why: worth a glance at the Workers dashboard during Thursday's test run.
 - The Cloudflare account, checked read-only through the connector, still has no Workers and no D1 databases, so Danny's dashboard steps from unit 1.03 are still to do. Why: the app can't go live until they are.
+
+## 2026-10-07: Unit 3.06 added (host reset button)
+
+**Done**
+- Added unit 3.06 Host reset button to `docs/phases.md` (now 12 units) and the reset to the host page list in `docs/scope.md`. The unit's own plan and log are in `docs/phase-3-screens/06-host-reset.md` and its log.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- A new unit in phase 3 rather than a change to 3.04's plan. Why: 3.04 is Done and reviewed; a separate unit keeps its own plan, log and review. Danny asked for the button on 2026-10-07 after playing through the live app, which is the OK for the scope change.

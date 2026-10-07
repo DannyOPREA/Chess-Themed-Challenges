@@ -4,7 +4,7 @@ import { assignPlayers, type RandomSource } from '../game/assignment'
 import { canChangePhase, type Phase } from '../game/phases'
 import type { Db } from './client'
 import { currentPhase, currentPhaseAllows } from './game'
-import { game, players } from './schema'
+import { accusations, game, players } from './schema'
 
 // The host page's reads and writes (unit 3.04). Only the host page calls these.
 
@@ -129,4 +129,19 @@ export const resetPin = async (db: Db, id: number, pin: string) => {
 export const removePlayer = async (db: Db, id: number) => {
   const rows = await db.delete(players).where(eq(players.id, id)).returning({ id: players.id })
   return rows.length === 1
+}
+
+/**
+ * Resets the game (Danny's request, 2026-10-07): deletes every accusation and
+ * every player and puts the game back in the Lobby, in one D1 batch (one
+ * transaction). Accusations are deleted explicitly rather than left to the
+ * cascade. Player ids keep counting up (AUTOINCREMENT), so a phone still
+ * holding an old player's cookie is logged out, not taken for a new player.
+ */
+export const resetGame = async (db: Db) => {
+  await db.batch([
+    db.delete(accusations),
+    db.delete(players),
+    db.update(game).set({ phase: 'lobby' }).where(eq(game.id, 1)),
+  ])
 }
