@@ -3,6 +3,7 @@ import { csrf } from 'hono/csrf'
 import { secureHeaders } from 'hono/secure-headers'
 import type { AppEnv } from './env'
 import { layout } from './layout'
+import { accusations } from './routes/accusations'
 import { notFound, onError } from './routes/errors'
 import { home } from './routes/home'
 import { host } from './routes/host'
@@ -26,6 +27,7 @@ app.use(layout)
 app.route('/', home)
 app.route('/', host)
 app.route('/', play)
+app.route('/', accusations)
 
 app.notFound(notFound)
 app.onError(onError)
