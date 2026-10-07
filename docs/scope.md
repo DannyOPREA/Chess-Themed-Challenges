@@ -8,8 +8,11 @@ This is a mobile web app. Each player is secretly given one chess-themed challen
 
 ## Content
 
-- Danny's list of 20 challenges, 20 decoys and 20 hints is built into the app as it is, kept as one JSON file in the repo (the original is `Challenges, Decoys and Hints.txt` in the project's shared files). To change it, edit the JSON and push to `main`. There is no editing screen.
+- Danny's list of 20 challenges, 20 decoys and 20 hints is built into the app as it is (the original is `Challenges, Decoys and Hints.txt` in the project's shared files). To change it, edit the content in the repo and push to `main`. There is no editing screen.
 - Fixes made on import: the stray "***" is removed from hint 10, and "awkardly" is corrected to "awkwardly" in hint 14.
+- **Test content for the Thursday test run (Danny, 2026-10-07).** The test must not give anything away, so the app also has a placeholder set: "Challenge 1" to "Challenge 20", "Decoy 1" to "Decoy 20", and "Hint for Challenge 1" to "Hint for Challenge 20", with matching placeholder descriptions.
+- A single setting in the Worker config, `CONTENT_SET`, picks `test` or `real`. It starts as `test`. After the Thursday test, one change (a PR Danny merges) switches it to `real`. The same change clears all game data (players, completions, accusations, phase back to Lobby), so Saturday starts from an empty lobby.
+- Local development, automated tests, screenshots and PR descriptions use the test set. The repo stays public (Danny's choice, for branch protection); committing the real content file is fine.
 
 ## Game phases
 
@@ -88,4 +91,4 @@ The reveal shows a final leaderboard. Each player gets a breakdown showing their
 
 ## Timeline
 
-Build by Thursday 2026-10-08. Danny does a test run with a few phones on Friday 2026-10-09. The crawl is on Saturday 2026-10-10.
+Build by Thursday 2026-10-08. Danny does a test run with a few phones on Thursday evening 2026-10-08, using the test content. After that the app is switched to the real content with a clean game. The crawl is on Saturday 2026-10-10.
