@@ -1,0 +1,47 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm ci)",
+      "Bash(npm ci *)",
+      "Bash(npm install)",
+      "Bash(npm test)",
+      "Bash(npm test *)",
+      "Bash(npm run test *)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run dev)",
+      "Bash(npm run dev *)",
+      "Bash(npm run db:generate)",
+      "Bash(npm run db:generate *)",
+      "Bash(npm run db:migrate:local)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(npx drizzle-kit generate *)",
+      "Bash(npx wrangler types)",
+      "Bash(npx wrangler types *)",
+      "Bash(npx hono request *)"
+    ],
+    "deny": [
+      "Bash(npx wrangler deploy*)",
+      "Bash(wrangler deploy*)",
+      "Bash(npx wrangler secret *)",
+      "Bash(wrangler secret *)",
+      "Bash(npx wrangler * --remote*)",
+      "Bash(wrangler * --remote*)"
+    ]
+  }
+}

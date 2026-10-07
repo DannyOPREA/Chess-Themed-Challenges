@@ -1,0 +1,46 @@
+# Chess pub crawl app
+
+A mobile web app for a one-night chess-themed pub crawl (Saturday 2026-10-10, about 20 players on their own phones). Each player is secretly given a challenge and a decoy, accuses other players of challenges, and is scored at the reveal.
+
+**`docs/scope.md` is the agreed spec.** Read it before changing anything about how the game behaves.
+
+## Stack (agreed; don't swap pieces without Danny's OK)
+
+- Cloudflare Workers (free plan) + D1, TypeScript
+- Hono with server-rendered `hono/jsx` pages; htmx for interactivity, screens poll every 10 s
+- Drizzle ORM + drizzle-kit migrations
+- Pico CSS
+- Zod + `@hono/zod-validator` for input checking
+- `uqr` for the join QR code
+- Player login: Hono signed cookies; 4-digit PIN stored as a salted SHA-256 hash via Web Crypto. No lockout after wrong PINs.
+- Host page: Hono `basicAuth`, password kept as a Cloudflare secret
+- Tests: Vitest + `@cloudflare/vitest-pool-workers`
+- Deploys: Cloudflare Workers Builds, on every push to `main`
+
+## Commands
+
+The project scaffold must provide these npm scripts. Keep the names: the session hook, CI and permission rules rely on them.
+
+- `npm run dev`: local dev server with a local D1
+- `npm test`: Vitest, once (not watch mode)
+- `npm run typecheck`: `tsc --noEmit`
+- `npm run db:generate`: generate a migration from the Drizzle schema
+- `npm run db:migrate:local`: apply migrations to the local D1
+
+## Rules
+
+1. **Reuse before writing.** For any solved problem, use a maintained library, a Hono middleware or a Cloudflare service. Custom code is only for the game itself (assignment, accusations, phase rules, detection, scoring) and the screens.
+2. **No spoilers.** All game logic runs on the server. Before the reveal, nothing sent to a player's browser may contain another player's challenge, decoy, completion status, or whether any accusation is right. The host page never shows challenges or decoys, except behind the clearly marked emergency "show all" button.
+3. **Scoring and detection follow `docs/scope.md` exactly.** Tests must cover scoring, detection, unique assignment and late joiners.
+4. **Content** (20 challenges, decoys and hints) lives in one JSON file in the repo. There is no editing screen.
+5. Anything under "Not in scope" in `docs/scope.md` needs Danny's OK first.
+6. **Never deploy from a session.** Don't run `wrangler deploy`, `wrangler secret put` or any `--remote` command. Production changes only through Workers Builds when `main` changes.
+7. Before calling work done, `npm run typecheck` and `npm test` must pass.
+
+## Claude Code setup in this repo
+
+- `.claude/skills/`: official skills copied unchanged from upstream: `hono` and `hono-jsx` (honojs/skills, MIT) and `wrangler` and `workers-best-practices` (cloudflare/skills, Apache-2.0). Sources and commits are in `.claude/skills/SOURCES.md`. Don't edit them; re-copy from upstream to update.
+- `.claude/hooks/session-start.sh`: installs npm packages at the start of cloud sessions.
+- `.claude/settings.json`: the hook and permission rules. These only apply while the Claude project has exactly one repository.
+- `.github/workflows/ci.yml`: typecheck and tests on every PR and push to `main`.
+- Cloud sessions may not be able to reach docs sites. If a fetch fails, use the skills above, the type definitions and READMEs in `node_modules`, or the library's docs on `raw.githubusercontent.com`.
