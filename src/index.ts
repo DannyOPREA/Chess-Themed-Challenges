@@ -7,6 +7,7 @@ import { notFound, onError } from './routes/errors'
 import { home } from './routes/home'
 import { host } from './routes/host'
 import { play } from './routes/play'
+import { reveal } from './routes/reveal'
 
 const app = new Hono<AppEnv>()
 
@@ -26,6 +27,7 @@ app.use(layout)
 app.route('/', home)
 app.route('/', host)
 app.route('/', play)
+app.route('/', reveal)
 
 app.notFound(notFound)
 app.onError(onError)
