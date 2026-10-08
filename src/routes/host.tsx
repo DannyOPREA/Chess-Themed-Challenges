@@ -22,11 +22,13 @@ import {
 } from '../db/host'
 import type { AppEnv } from '../env'
 import { PHASE_LABELS, type Phase, phaseAllows, phaseChangesFrom, phaseSchema } from '../game/phases'
+import { loadResults, Results, showQuery } from './reveal'
 
 // The host page (docs/scope.md, "Host page"), behind HTTP basic auth with the
 // HOST_PASSWORD secret. Danny also plays, so nothing here shows a challenge or
-// decoy except the emergency "show all" page, and completions are only shown
-// on each player's own page, not in the list. Every action that can't be
+// decoy except the emergency "show all" page and, once the game is in the
+// Reveal, the results (the same as every player sees then), and completions
+// are only shown on each player's own page, not in the list. Every action that can't be
 // undone (a phase change, removing a player, resetting the game, show all)
 // has a confirm step.
 export const host = new Hono<AppEnv>()
@@ -133,7 +135,12 @@ host.get('/host', async (c) => {
             Move to {PHASE_LABELS[next]}
           </a>
         ) : (
-          <p>The game is over. This is the final phase.</p>
+          <>
+            <p>The game is over. This is the final phase.</p>
+            <a href="/host/results" role="button">
+              Show the results
+            </a>
+          </>
         )}
       </section>
       <PlayerList list={list} phase={phase} />
@@ -358,6 +365,42 @@ host.get('/host/qr', (c) => {
       </p>
     </>,
     { title: 'Scan to join' },
+  )
+})
+
+// ---- Results (unit 3.07) ----
+
+// The same leaderboard and breakdowns the players see at `/reveal`, for the
+// host without joining as a player, so nobody is marked as "you". Only in the
+// Reveal, like `/reveal`: before then it goes back to the host page and reads
+// nothing about anyone, so the host page still can't spoil the game.
+host.get('/host/results', showQuery, async (c) => {
+  const db = createDb(c.env.DB)
+  if (!phaseAllows(await getPhase(db), 'seeReveal')) return c.redirect('/host', 303)
+  const { scores, content } = await loadResults(db, c.env.CONTENT_SET)
+  return c.render(
+    <>
+      <p>
+        <a href="/host">Back to the host page</a>
+      </p>
+      <hgroup>
+        <h1>Final results</h1>
+        <p>Everyone's challenge, decoy and score.</p>
+      </hgroup>
+      <Results
+        scores={scores}
+        content={content}
+        you={undefined}
+        show={c.req.valid('query').show}
+        path="/host/results"
+      />
+      <p>
+        <a href="/host" role="button" class="secondary outline">
+          Back to the host page
+        </a>
+      </p>
+    </>,
+    { title: 'Final results' },
   )
 })
 

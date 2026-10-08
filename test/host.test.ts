@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test'
 import { exports } from 'cloudflare:workers'
 import { eq } from 'drizzle-orm'
+import { generateSignedCookie } from 'hono/cookie'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { verifyPin } from '../src/auth/pin'
 import { createDb } from '../src/db/client'
@@ -72,7 +73,7 @@ describe('host login', () => {
 
   it('protects every host path, including the fragments and actions', async () => {
     const player = await addPlayer('Player A')
-    for (const path of ['/host/players', `/host/players/${player.id}`, '/host/qr', '/host/all', '/host/phase?to=game_on', '/host/reset']) {
+    for (const path of ['/host/players', `/host/players/${player.id}`, '/host/qr', '/host/all', '/host/phase?to=game_on', '/host/reset', '/host/results']) {
       expect((await get(path, {})).status, path).toBe(401)
     }
     expect((await post('/host/all', {}, { Authorization: auth('wrong') })).status).toBe(401)
@@ -628,5 +629,119 @@ describe('resetting the game', () => {
     })
     expect(res.status).toBe(403)
     expect(await allPlayers()).toHaveLength(1)
+  })
+})
+
+describe('results in the Reveal', () => {
+  // A small game: Alice and Bob completed, Alice guessed Bob right, Bob
+  // guessed Cara wrong. Alice +5 (not detected) +2 = 7, Bob +1 (detected) -1
+  // = 0, Cara 0 (not completed).
+  const setUp = async () => {
+    const alice = await addPlayer('Alice', { challenge: 1, decoy: 11, completed: true })
+    const bob = await addPlayer('Bob', { challenge: 2, decoy: 12, completed: true })
+    const cara = await addPlayer('Cara', { challenge: 3, decoy: 13 })
+    await db.insert(accusations).values([
+      { accuserId: alice.id, accusedId: bob.id, challenge: 2 },
+      { accuserId: bob.id, accusedId: cara.id, challenge: 4 },
+    ])
+    await setPhase('reveal')
+    return { alice, bob, cara }
+  }
+
+  // The leaderboard's rows as [rank, name, points], with tags stripped.
+  const leaderboardRows = (html: string) => {
+    const tbody = html.slice(html.indexOf('<tbody>'), html.indexOf('</tbody>'))
+    return [...tbody.matchAll(/<tr[^>]*>(.*?)<\/tr>/g)].map((row) =>
+      [...row[1]!.matchAll(/<td>(.*?)<\/td>/g)].map((cell) => cell[1]!.replace(/<[^>]+>/g, '')),
+    )
+  }
+  const breakdowns = (html: string) => html.slice(html.indexOf("Everyone's breakdown"))
+  const openBreakdowns = (html: string) =>
+    [...html.matchAll(/<article id="player-(\d+)" class="breakdown"><details open/g)].map((m) => Number(m[1]))
+
+  it('offers the button on the host page only in the Reveal', async () => {
+    for (const phase of ['lobby', 'game_on', 'accusations_closed'] as const) {
+      await setPhase(phase)
+      expect(await (await get('/host')).text(), phase).not.toContain('/host/results')
+    }
+    await setPhase('reveal')
+    expect(await (await get('/host')).text()).toContain(
+      '<a href="/host/results" role="button">Show the results</a>',
+    )
+  })
+
+  it('goes back to the host page and shows nothing before the Reveal', async () => {
+    for (const phase of ['lobby', 'game_on', 'accusations_closed'] as const) {
+      await resetDb()
+      const alice = await addPlayer('Alice', { challenge: 1, decoy: 11, completed: true })
+      const bob = await addPlayer('Bob', { challenge: 2, decoy: 12 })
+      await db.insert(accusations).values({ accuserId: alice.id, accusedId: bob.id, challenge: 2 })
+      await setPhase(phase)
+      const res = await get('/host/results')
+      expect(res.status, phase).toBe(303)
+      expect(res.headers.get('Location')).toBe('/host')
+      expect(await res.text()).not.toMatch(/Alice|Bob|Challenge|Decoy|Description|points/)
+    }
+  })
+
+  it('shows the host the same results as the players, without joining', async () => {
+    const { alice, bob, cara } = await setUp()
+    const res = await get('/host/results')
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Cache-Control')).toBe('no-store')
+    const html = await res.text()
+    expect(html).toContain('<title>Final results</title>')
+    expect(leaderboardRows(html)).toEqual([
+      ['1', 'Alice', '7'],
+      ['=2', 'Bob', '0'],
+      ['=2', 'Cara', '0'],
+    ])
+    for (const p of [alice, bob, cara]) expect(html).toContain(`id="player-${p.id}"`)
+    expect(html).toContain('Description of Challenge 2')
+    expect(html).toContain('Description of Decoy 13')
+
+    // A player's own /reveal, with their "(you)" taken out, shows the same.
+    const value = `${alice.id}.${Math.floor(alice.joinedAt.getTime() / 1000)}`
+    const cookie = (await generateSignedCookie('player', value, env.COOKIE_SECRET)).split(';')[0]!
+    const player = await (
+      await exports.default.fetch(`${ORIGIN}/reveal`, { headers: { Cookie: cookie }, redirect: 'manual' })
+    ).text()
+    expect(leaderboardRows(player).map(([r, n, t]) => [r, n!.replace(' (you)', ''), t])).toEqual(leaderboardRows(html))
+    const strip = (h: string) =>
+      breakdowns(h)
+        .replace(/<details open="">/g, '<details>')
+        .replace(/ \(you\)/g, '')
+        .replace(/<a href="[^"]*"[^>]*>Back to [^<]*<\/a>/g, '')
+    expect(strip(html)).toEqual(strip(player))
+  })
+
+  it('marks nobody as you, opens no breakdown, and links back to the host page', async () => {
+    await setUp()
+    const html = await (await get('/host/results')).text()
+    expect(html).not.toContain('(you)')
+    expect(html).not.toContain('aria-current')
+    expect(openBreakdowns(html)).toEqual([])
+    expect(html).toContain('<a href="/host">Back to the host page</a>')
+    expect(html).toContain('<a href="/host" role="button" class="secondary outline">Back to the host page</a>')
+    expect(html).not.toContain('href="/play"')
+  })
+
+  it("links each leaderboard name to that player's breakdown on the host's copy, opened", async () => {
+    const { bob } = await setUp()
+    const html = await (await get('/host/results')).text()
+    expect(html).toContain(`<a href="/host/results?show=${bob.id}#player-${bob.id}">Bob</a>`)
+    expect(html).not.toContain('/reveal?show=')
+    expect(openBreakdowns(await (await get(`/host/results?show=${bob.id}`)).text())).toEqual([bob.id])
+    for (const bad of ['abc', '-1', '999999']) {
+      const res = await get(`/host/results?show=${bad}`)
+      expect(res.status).toBe(200)
+      expect(openBreakdowns(await res.text())).toEqual([])
+    }
+  })
+
+  it('needs the host password', async () => {
+    await setUp()
+    expect((await get('/host/results', {})).status).toBe(401)
+    expect((await get('/host/results', { Authorization: auth('wrong') })).status).toBe(401)
   })
 })

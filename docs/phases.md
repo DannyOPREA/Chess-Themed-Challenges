@@ -4,7 +4,7 @@
 - Approved by Danny: 2026-10-07
 - Changes to this plan are logged in [`logs/general.md`](../logs/general.md).
 
-This plan splits the build of [`scope.md`](scope.md) into 4 phases and 12 units. One unit is one PR. Each unit's detailed build plan is written in its own PR, at the path shown, from the template in [`README.md`](README.md); this file only fixes what each unit delivers, what it depends on, and the order.
+This plan splits the build of [`scope.md`](scope.md) into 4 phases and 13 units. One unit is one PR. Each unit's detailed build plan is written in its own PR, at the path shown, from the template in [`README.md`](README.md); this file only fixes what each unit delivers, what it depends on, and the order.
 
 ## Key dates
 
@@ -27,6 +27,7 @@ Units in the same wave can run in parallel. A unit starts once every unit it dep
 | C | 3.01 Join and rejoin, 3.04 Host page | 1.02 and 2.02 |
 | D | 3.02 Player screen, 3.03 Accusations, 3.05 Reveal | 3.01 (and 2.01 for 3.05) |
 | D2 | 3.06 Host reset button (added 2026-10-07 at Danny's request) | 3.04 |
+| D3 | 3.07 Host results button (added 2026-10-08 at Danny's request) | 3.04 and 3.05 |
 | E | Whole-app check (not a unit, see below) | units 3.01 to 3.05 and phases 1 and 2 (it ran before 3.06 was added) |
 | F | 4.01 Switch to real content | the Thursday test run and Danny's word |
 
@@ -112,6 +113,13 @@ Each screen polls every 10 seconds with htmx. No unit may send a player another 
 - Added on 2026-10-07 at Danny's request, after the whole-app check, so the live app can be cleaned before the Thursday test run. The whole-app check isn't re-run for it; the unit's own review plays the reset in a browser.
 - Delivers: a "Reset the game" button on the host page, behind a confirm page, that deletes every player and accusation and puts the game back in the Lobby. Logged-in phones go back to the join screen; the host password is unchanged.
 - Tests: the confirm step changes nothing; the reset from every phase; logged-in phones are sent to the join screen and the same name can join again.
+
+### 3.07 Host results button (`07-host-results.md`)
+
+- Depends on: 3.04, 3.05
+- Added on 2026-10-08 at Danny's request, after the whole-app check, so the host can show the results during the Reveal without joining as a player. The whole-app check isn't re-run for it; the unit's own review plays the screen in a browser.
+- Delivers: a "Show the results" button on the host page in the Reveal phase, opening `/host/results`: the same leaderboard and breakdowns as the players' `/reveal`, behind the host password, with nobody marked as "you". Before the Reveal it goes back to the host page and shows nothing.
+- Tests: the button only in the Reveal; nothing shown before it; the same results as a player's screen; the host password.
 
 ## Whole-app check
 
