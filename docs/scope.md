@@ -72,7 +72,8 @@ The reveal shows a final leaderboard. Each player gets a breakdown showing their
   - reset a player's PIN
   - show the join QR code
   - reset the game: delete every player and accusation and go back to the Lobby, behind a confirm step (added at Danny's request, 2026-10-07)
-- It never shows anyone's challenge or decoy, so it can't spoil the game for Danny. The only exception is a clearly marked emergency "show all" button.
+  - in the Reveal, open the same leaderboard and breakdown screen the players see, without joining as a player (added at Danny's request, 2026-10-08)
+- Before the Reveal it never shows anyone's challenge or decoy, so it can't spoil the game for Danny. The only exception is a clearly marked emergency "show all" button.
 
 ## Hosting and tech
 

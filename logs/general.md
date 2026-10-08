@@ -210,3 +210,17 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 
 **Decisions**
 - A new unit in phase 3 rather than a change to 3.04's plan. Why: 3.04 is Done and reviewed; a separate unit keeps its own plan, log and review. Danny asked for the button on 2026-10-07 after playing through the live app, which is the OK for the scope change.
+
+## 2026-10-08: Unit 3.07 added (host results button)
+
+**Done**
+- Added unit 3.07 Host results button to `docs/phases.md` (now 13 units), the action to the host page list in `docs/scope.md`, and the Reveal exception to `CLAUDE.md` rule 2. The unit's own plan and log are in `docs/phase-3-screens/07-host-results.md` and its log.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- A new unit in phase 3 rather than a change to 3.04's or 3.05's plan. Why: both are Done and reviewed; a separate unit keeps its own plan, log and review, as with 3.06. Danny asked for the button on 2026-10-08, which is the OK for the scope change. It has to merge before the 17:00 UK merge freeze for the Thursday test.

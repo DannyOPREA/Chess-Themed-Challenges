@@ -5,7 +5,7 @@ import { type PlayerEnv, requirePlayer } from '../auth/session'
 import { type Content, getChallenge, getDecoy, loadContent } from '../content'
 import { createDb } from '../db/client'
 import { getPhase } from '../db/game'
-import { loadFinalGame } from '../db/reveal'
+import { type FinalGame, loadFinalGame } from '../db/reveal'
 import { phaseAllows } from '../game/phases'
 import { type AccusationResult, type PlayerScore, POINTS, scoreGame } from '../game/scoring'
 
@@ -13,7 +13,8 @@ import { type AccusationResult, type PlayerScore, POINTS, scoreGame } from '../g
 // player's breakdown, with full challenge descriptions. Only in the Reveal
 // phase; before then it sends the phone back to the player screen and reads
 // nothing about anyone. It doesn't poll: the Reveal is the last phase, and
-// completions are final by then.
+// completions are final by then. The host page shows the same results at
+// `/host/results` (unit 3.07), through `Results` below.
 export const reveal = new Hono<PlayerEnv>()
 
 reveal.use('/reveal', requirePlayer)
@@ -42,12 +43,24 @@ const challengeReason = (s: PlayerScore) =>
         : 'not completed'
 
 // The link to a player's breakdown reloads the page with it open, because
-// following a link to a closed <details> doesn't open it.
-const breakdownLink = (id: number) => `/reveal?show=${id}#player-${id}`
+// following a link to a closed <details> doesn't open it. `path` is the page
+// the results are on: `/reveal` for players, `/host/results` for the host.
+const breakdownLink = (path: string, id: number) => `${path}?show=${id}#player-${id}`
 
 type Labels = (s: PlayerScore) => string
 
-const Leaderboard = ({ scores, you, rank }: { scores: PlayerScore[]; you: number; rank: Labels }) => (
+// `you` is the phone's own player, or undefined on the host's copy.
+const Leaderboard = ({
+  scores,
+  you,
+  rank,
+  path,
+}: {
+  scores: PlayerScore[]
+  you: number | undefined
+  rank: Labels
+  path: string
+}) => (
   <section>
     <h2>Leaderboard</h2>
     <div class="overflow-auto">
@@ -61,7 +74,7 @@ const Leaderboard = ({ scores, you, rank }: { scores: PlayerScore[]; you: number
         </thead>
         <tbody>
           {scores.map((s) => {
-            const name = <a href={breakdownLink(s.id)}>{s.name}</a>
+            const name = <a href={breakdownLink(path, s.id)}>{s.name}</a>
             return (
               <tr aria-current={s.id === you ? 'true' : undefined}>
                 <td>{rank(s)}</td>
@@ -130,7 +143,7 @@ const Breakdown = ({
   content,
 }: {
   score: PlayerScore
-  you: number
+  you: number | undefined
   open: boolean
   rank: Labels
   content: Content
@@ -193,35 +206,37 @@ const Breakdown = ({
 
 // `?show=<id>` opens that player's breakdown too (the leaderboard's links).
 // Anything else in it is ignored.
-const showQuery = zValidator(
+export const showQuery = zValidator(
   'query',
   z.object({ show: z.coerce.number().int().positive().optional().catch(undefined) }),
 )
 
-reveal.get('/reveal', showQuery, async (c) => {
-  const db = createDb(c.env.DB)
-  if (!phaseAllows(await getPhase(db), 'seeReveal')) {
-    if (c.req.header('HX-Request')) {
-      c.header('HX-Redirect', '/play')
-      return c.body(null, 200)
-    }
-    return c.redirect('/play', 303)
-  }
-  // The game is over and nothing can change any more, so the scores are read
-  // once the phase says so.
-  const game = await loadFinalGame(db)
-  const content = loadContent(c.env.CONTENT_SET)
+// The heading, leaderboard and everyone's breakdown, scored from `game`
+// (`loadFinalGame`), shared by the players' `/reveal` and the host's
+// `/host/results`. `you` (the phone's own player) is marked and opened; the
+// host's copy has no `you`. `show` opens one more breakdown.
+export const Results = ({
+  game,
+  content,
+  you,
+  show,
+  path,
+}: {
+  game: FinalGame
+  content: Content
+  you: number | undefined
+  show: number | undefined
+  path: string
+}) => {
   const scores = scoreGame(game.players, game.accusations)
   const rank = rankLabeller(scores)
-  const you = c.var.player.id
-  const { show } = c.req.valid('query')
-  return c.render(
+  return (
     <>
       <hgroup>
         <h1>Final results</h1>
         <p>Everyone's challenge, decoy and score.</p>
       </hgroup>
-      <Leaderboard scores={scores} you={you} rank={rank} />
+      <Leaderboard scores={scores} you={you} rank={rank} path={path} />
       <section>
         {/* Pico gives a summary a 1rem line height, so the padding makes the
             whole card the tap target, and the gap keeps an open card's first
@@ -235,6 +250,31 @@ reveal.get('/reveal', showQuery, async (c) => {
           <Breakdown score={s} you={you} open={s.id === you || s.id === show} rank={rank} content={content} />
         ))}
       </section>
+    </>
+  )
+}
+
+reveal.get('/reveal', showQuery, async (c) => {
+  const db = createDb(c.env.DB)
+  if (!phaseAllows(await getPhase(db), 'seeReveal')) {
+    if (c.req.header('HX-Request')) {
+      c.header('HX-Redirect', '/play')
+      return c.body(null, 200)
+    }
+    return c.redirect('/play', 303)
+  }
+  // The game is over and nothing can change any more, so the scores are read
+  // once the phase says so.
+  const game = await loadFinalGame(db)
+  return c.render(
+    <>
+      <Results
+        game={game}
+        content={loadContent(c.env.CONTENT_SET)}
+        you={c.var.player.id}
+        show={c.req.valid('query').show}
+        path="/reveal"
+      />
       <p>
         <a href="/play" role="button" class="secondary outline">
           Back to your screen
