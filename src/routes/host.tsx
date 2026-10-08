@@ -29,9 +29,9 @@ import { Results, showQuery } from './reveal'
 // HOST_PASSWORD secret. Danny also plays, so nothing here shows a challenge or
 // decoy except the emergency "show all" page and, once the game is in the
 // Reveal, the results (the same as every player sees then), and completions
-// are only shown on each player's own page, not in the list. Every action that can't be
-// undone (a phase change, removing a player, resetting the game, show all)
-// has a confirm step.
+// are only shown on each player's own page, not in the list. Every action
+// that can't be undone (a phase change, removing a player, resetting the game,
+// show all) has a confirm step.
 export const host = new Hono<AppEnv>()
 
 // `/host/*` also matches `/host` itself.
