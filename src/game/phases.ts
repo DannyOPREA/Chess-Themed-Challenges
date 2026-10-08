@@ -29,7 +29,8 @@ export type PhaseAction =
   // The host marks or unmarks a player's completion. Still allowed once
   // accusations close (docs/scope.md); the Reveal is final.
   | 'hostMarkCompletion'
-  // Players see the leaderboard and everyone's breakdown.
+  // Players see the leaderboard and everyone's breakdown, and so does the
+  // host at /host/results (unit 3.07).
   | 'seeReveal'
 
 const ALLOWED: Record<PhaseAction, readonly Phase[]> = {

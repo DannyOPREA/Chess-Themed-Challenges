@@ -18,9 +18,9 @@ A "Show the results" button on the host page in the Reveal phase, opening the sa
 ## Work
 
 1. `src/routes/reveal.tsx` (unit 3.05):
-   - `loadResults(db, contentSet)`: the final game scored by `scoreGame`, and the content set.
-   - `Results`: the leaderboard and everyone's breakdown, as `/reveal` showed them. It takes `you` (the phone's own player, marked "(you)" and opened; `undefined` for the host), `show` (one more breakdown to open) and `path` (the page the leaderboard's name links point at).
+   - `Results`: the "Final results" heading, the leaderboard and everyone's breakdown, as `/reveal` showed them, scored with `scoreGame` from the game `loadFinalGame` read (`src/db/reveal.ts`, which now names that type `FinalGame`). It takes `you` (the phone's own player, marked "(you)" and opened; `undefined` for the host), `show` (one more breakdown to open) and `path` (the page the leaderboard's name links point at).
    - `showQuery` is exported for the host route. `/reveal` itself is unchanged for players.
+   - The `seeReveal` phase rule (`src/game/phases.ts`) gates both pages; its comment says so.
 2. `src/routes/host.tsx`:
    - In the Reveal, under "The game is over. This is the final phase.", a "Show the results" button (a primary button, as it is the one thing to do then) linking to `/host/results`.
    - `GET /host/results`: before the Reveal, a 303 back to `/host` that reads nothing about anyone. In the Reveal, a "Final results" page with a "Back to the host page" link at the top and a button at the bottom, and `Results` with no `you`, so nobody is marked and no breakdown is open, and name links to `/host/results?show=<id>#player-<id>`.

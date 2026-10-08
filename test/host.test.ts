@@ -655,7 +655,12 @@ describe('results in the Reveal', () => {
       [...row[1]!.matchAll(/<td>(.*?)<\/td>/g)].map((cell) => cell[1]!.replace(/<[^>]+>/g, '')),
     )
   }
-  const breakdowns = (html: string) => html.slice(html.indexOf("Everyone's breakdown"))
+  // Everything from the first breakdown card on.
+  const breakdowns = (html: string) => {
+    const start = html.indexOf('<article id="player-')
+    if (start < 0) throw new Error('no breakdowns')
+    return html.slice(start)
+  }
   const openBreakdowns = (html: string) =>
     [...html.matchAll(/<article id="player-(\d+)" class="breakdown"><details open/g)].map((m) => Number(m[1]))
 
@@ -709,9 +714,10 @@ describe('results in the Reveal', () => {
     expect(leaderboardRows(player).map(([r, n, t]) => [r, n!.replace(' (you)', ''), t])).toEqual(leaderboardRows(html))
     const strip = (h: string) =>
       breakdowns(h)
-        .replace(/<details open="">/g, '<details>')
+        .replace(/<details open=""/g, '<details')
         .replace(/ \(you\)/g, '')
         .replace(/<a href="[^"]*"[^>]*>Back to [^<]*<\/a>/g, '')
+    expect(strip(player)).toContain('Description of Challenge 2')
     expect(strip(html)).toEqual(strip(player))
   })
 

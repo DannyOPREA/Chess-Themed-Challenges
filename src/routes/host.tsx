@@ -9,6 +9,7 @@ import { pinSchema } from '../auth/pin'
 import { getChallenge, getDecoy, loadContent } from '../content'
 import { createDb } from '../db/client'
 import { getPhase } from '../db/game'
+import { loadFinalGame } from '../db/reveal'
 import {
   changePhase,
   gameMarker,
@@ -22,7 +23,7 @@ import {
 } from '../db/host'
 import type { AppEnv } from '../env'
 import { PHASE_LABELS, type Phase, phaseAllows, phaseChangesFrom, phaseSchema } from '../game/phases'
-import { loadResults, Results, showQuery } from './reveal'
+import { Results, showQuery } from './reveal'
 
 // The host page (docs/scope.md, "Host page"), behind HTTP basic auth with the
 // HOST_PASSWORD secret. Danny also plays, so nothing here shows a challenge or
@@ -377,19 +378,15 @@ host.get('/host/qr', (c) => {
 host.get('/host/results', showQuery, async (c) => {
   const db = createDb(c.env.DB)
   if (!phaseAllows(await getPhase(db), 'seeReveal')) return c.redirect('/host', 303)
-  const { scores, content } = await loadResults(db, c.env.CONTENT_SET)
+  const game = await loadFinalGame(db)
   return c.render(
     <>
       <p>
         <a href="/host">Back to the host page</a>
       </p>
-      <hgroup>
-        <h1>Final results</h1>
-        <p>Everyone's challenge, decoy and score.</p>
-      </hgroup>
       <Results
-        scores={scores}
-        content={content}
+        game={game}
+        content={loadContent(c.env.CONTENT_SET)}
         you={undefined}
         show={c.req.valid('query').show}
         path="/host/results"

@@ -3,9 +3,9 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { type PlayerEnv, requirePlayer } from '../auth/session'
 import { type Content, getChallenge, getDecoy, loadContent } from '../content'
-import { createDb, type Db } from '../db/client'
+import { createDb } from '../db/client'
 import { getPhase } from '../db/game'
-import { loadFinalGame } from '../db/reveal'
+import { type FinalGame, loadFinalGame } from '../db/reveal'
 import { phaseAllows } from '../game/phases'
 import { type AccusationResult, type PlayerScore, POINTS, scoreGame } from '../game/scoring'
 
@@ -211,34 +211,31 @@ export const showQuery = zValidator(
   z.object({ show: z.coerce.number().int().positive().optional().catch(undefined) }),
 )
 
-// The final results, scored from the database. Only for the Reveal phase:
-// callers check the phase first.
-export const loadResults = async (db: Db, contentSet: string) => {
-  // The game is over and nothing can change any more, so the scores are read
-  // once the phase says so.
-  const game = await loadFinalGame(db)
-  return { scores: scoreGame(game.players, game.accusations), content: loadContent(contentSet) }
-}
-
-// The leaderboard and everyone's breakdown, shared by the players' `/reveal`
-// and the host's `/host/results`. `you` (the phone's own player) is marked and
-// opened; the host's copy has no `you`. `show` opens one more breakdown.
+// The heading, leaderboard and everyone's breakdown, scored from `game`
+// (`loadFinalGame`), shared by the players' `/reveal` and the host's
+// `/host/results`. `you` (the phone's own player) is marked and opened; the
+// host's copy has no `you`. `show` opens one more breakdown.
 export const Results = ({
-  scores,
+  game,
   content,
   you,
   show,
   path,
 }: {
-  scores: PlayerScore[]
+  game: FinalGame
   content: Content
   you: number | undefined
   show: number | undefined
   path: string
 }) => {
+  const scores = scoreGame(game.players, game.accusations)
   const rank = rankLabeller(scores)
   return (
     <>
+      <hgroup>
+        <h1>Final results</h1>
+        <p>Everyone's challenge, decoy and score.</p>
+      </hgroup>
       <Leaderboard scores={scores} you={you} rank={rank} path={path} />
       <section>
         {/* Pico gives a summary a 1rem line height, so the padding makes the
@@ -266,16 +263,14 @@ reveal.get('/reveal', showQuery, async (c) => {
     }
     return c.redirect('/play', 303)
   }
-  const { scores, content } = await loadResults(db, c.env.CONTENT_SET)
+  // The game is over and nothing can change any more, so the scores are read
+  // once the phase says so.
+  const game = await loadFinalGame(db)
   return c.render(
     <>
-      <hgroup>
-        <h1>Final results</h1>
-        <p>Everyone's challenge, decoy and score.</p>
-      </hgroup>
       <Results
-        scores={scores}
-        content={content}
+        game={game}
+        content={loadContent(c.env.CONTENT_SET)}
         you={c.var.player.id}
         show={c.req.valid('query').show}
         path="/reveal"
