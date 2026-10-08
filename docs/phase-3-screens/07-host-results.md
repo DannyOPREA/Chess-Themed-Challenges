@@ -1,6 +1,6 @@
 # Phase 3, unit 07: Host results button
 
-- Status: In progress
+- Status: Done
 - Log: [logs/phase-3-screens/07-host-results.md](../../logs/phase-3-screens/07-host-results.md)
 - Depends on: 3.04 Host page, 3.05 Reveal
 

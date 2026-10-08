@@ -44,3 +44,22 @@ Plan: [docs/phase-3-screens/07-host-results.md](../../docs/phase-3-screens/07-ho
 
 **Decisions**
 - `Results` takes the game and scores it, rather than taking scores. Why: both callers then do the same two steps (phase check, `loadFinalGame`), and no loader lives in a route file.
+
+## 2026-10-08: Unit review and merge
+
+**Done**
+- Ran the `unit-reviewer` on the first commit, and again on the code-review fixes. Both verdicts "Pass", nothing Blocking or Should fix. In a 390 × 844 browser it played a game of five (four in the Lobby, one late joiner; a completion undone, then fixed by the host in Accusations closed; accusations right, wrong, changed and cleared). Before the Reveal, the host page had no results button and `/host/results` went back to the host page; no saved response leaked a challenge or decoy to the host or another player's to a player. In the Reveal, "Show the results" opened the host's copy, with nobody marked as "you", name links opening that card, and breakdown HTML identical to a player's `/reveal` apart from "(you)" and the open card. Scores matched its hand-worked figures (Ann 7, Dan 7, Cat 3, Eve 2, Ben 0) on the host's copy and all five phones. No overflow at phone width, no console errors.
+- Acted on the reviewer's notes:
+  1. Plan status set to Done and this entry added.
+  2. Two over-long comment lines (`src/routes/host.tsx`, `src/db/reveal.ts`) rewrapped.
+  3. A host tab opened before the Reveal, with the phase moved from another device, shows the button only after a reload, because the Phase section doesn't poll (unit 3.04). Left as it is: moving to the Reveal from the host page lands on a page that shows the button, and the host page has never polled its phase.
+- Typecheck and 302 tests pass; CI's `check` job green; `main` has nothing new to merge in.
+
+**Worked**
+- The shared `Results` component kept the host's copy and the players' screen byte-for-byte the same.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Merged before the 17:00 UK merge freeze for Thursday's test run. Why: Danny asked for the button for the test, and every merge to `main` redeploys the live app.
