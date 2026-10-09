@@ -129,3 +129,17 @@ Plan: [docs/phase-1-foundation/02-data-and-content.md](../../docs/phase-1-founda
 - Danny's double space before the last word was tidied to one space; otherwise the text is exactly as Danny wrote it, with no full stop added. Why: it reads as a typing slip, and the other hints use single spaces.
 - Merged and deployed straight away, on the Friday before the event. Why: Danny asked for the change on the live game, and a merge is the only way to change it. The game is an empty Lobby, so the deploy touches nobody. Nothing else went in with it.
 - Reviewed as a change with no app code (review steps 1, 4 and 5): only one string in the content file changed, which the existing content tests cover.
+
+## 2026-10-09: Full stop on hint 15
+
+**Done**
+- Danny asked for a full stop at the end of hint 15's new wording. Added it in `src/content/real.json` and in the shared file, and checked the two still match apart from the fixes made on import. Typecheck and tests pass.
+
+**Worked**
+- Nothing to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- This replaces the earlier entry's choice not to add a full stop. Why: Danny asked for one.
