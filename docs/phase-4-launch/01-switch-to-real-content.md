@@ -1,6 +1,6 @@
 # Phase 4, unit 01: Switch to real content
 
-- Status: In progress
+- Status: Done
 - Log: [logs/phase-4-launch/01-switch-to-real-content.md](../../logs/phase-4-launch/01-switch-to-real-content.md)
 - Depends on: every earlier unit, the Thursday test run, and Danny's word (`CLAUDE.md`, "Stop and ask Danny"). Danny gave it on 2026-10-09 after the test run.
 
@@ -18,18 +18,23 @@ The deployed app gives players Danny's real challenges, decoys and hints, and Sa
 1. `wrangler.jsonc`: `CONTENT_SET` is `real`. The real set itself, `src/content/real.json`, came with unit 1.02; it was checked again against Danny's original file (same 20 challenges, decoys and hints, only the two fixes differ).
 2. Local development and tests stay on the `test` set:
    - `vitest.config.ts` sets `CONTENT_SET` to `test` in the test bindings, over `wrangler.jsonc`.
-   - `.dev.vars.example` sets `CONTENT_SET=test`; `.dev.vars` overrides `wrangler.jsonc` in `npm run dev`. A `.dev.vars` copied before this unit needs the line added.
+   - `npm run dev` is `wrangler dev --var CONTENT_SET:test`, so local development gets the test set whatever is in `.dev.vars`.
+   - `.claude/agents/unit-reviewer.md` says so, and tells the reviewer to stop if the local screens show anything but the test placeholders.
 3. Clearing the game: migration `0003_clear_game_for_real_content.sql` (made with `drizzle-kit generate --custom`, so Drizzle's journal knows it) deletes every accusation and every player and sets the game row back to the Lobby, the same three changes as `resetGame` (unit 3.06). The deploy applies migrations before it deploys the new version (`scripts/deploy.sh`), so the test game is gone before any player sees the real content, and Danny has nothing to press. D1 records applied migrations, so it runs only once and never touches Saturday's game. Player ids keep counting up, so phones still holding a test player's cookie go back to the join screen.
 
 ## Tests
 
 - `test/content.test.ts`: tests still run on the `test` set (now set by `vitest.config.ts`), and both sets keep their shape checks; the real set is checked for shape only, so its text stays out of tests.
-- `test/schema.test.ts`: migration 0003, run over a game in the Reveal with players, a completion and accusations, leaves no players or accusations, the Lobby, and a new player's id higher than the old ones; run over an empty Lobby it changes nothing.
+- `test/schema.test.ts`, migration 0003:
+  - run over a game in the Reveal with players, a completion and accusations, it leaves no players or accusations, the Lobby, and a new player's id higher than the old ones;
+  - it empties every table but the game row, and the test names the tables, so a table added later without being added to the migration fails it;
+  - applying the migrations again (what every later deploy does) leaves a game in progress alone.
 
 ## Done when
 
 - `npm run typecheck` and `npm test` pass, locally and in CI's `check` job.
-- After the merge, the Workers Builds deploy succeeds; the live database has migration 0003, no players and the Lobby (read-only check); and a new player on the live app is shown a challenge from the real set once Game on starts.
+- Merged before anyone joins Saturday's game, since the migration deletes whatever players the live database holds when it runs (Friday 2026-10-09).
+- After the merge, checked from the session without writing anything: the deployed Worker has `CONTENT_SET` set to `real`, and a read-only `SELECT` on the live database shows migration 0003 applied, no players and the Lobby. Joining the live game from a session would add a player to Saturday's game, so it isn't done; Danny can join in the Lobby to see the real hint list and remove that player on the host page.
 
 ## Not in this unit
 

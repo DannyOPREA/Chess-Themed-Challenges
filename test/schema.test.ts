@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:test'
+import { applyD1Migrations, env } from 'cloudflare:test'
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, inject, it } from 'vitest'
 import { createDb } from '../src/db/client'
@@ -228,10 +228,31 @@ describe('migration 0003, clearing the game for the real content', () => {
     expect(c.id).toBeGreaterThan(b.id)
   })
 
-  it('leaves an empty Lobby as it is', async () => {
+  it('empties every game table but the game row, so a table added later must be added to it', async () => {
+    const a = await addPlayer('Player A', { challenge: 1, decoy: 1 })
+    const b = await addPlayer('Player B', { challenge: 2, decoy: 2 })
+    await db.insert(accusations).values({ accuserId: a.id, accusedId: b.id, challenge: 2 })
+
     await clearGame()
-    expect(await db.select().from(players)).toEqual([])
-    expect(await getPhase(db)).toBe('lobby')
-    expect(await db.select().from(game)).toHaveLength(1)
+
+    const { results } = await env.DB.prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name NOT IN ('game', 'd1_migrations')",
+    ).all<{ name: string }>()
+    expect(results.map((r) => r.name).sort()).toEqual(['accusations', 'players'])
+    for (const { name } of results) {
+      const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM \`${name}\``).first<{ n: number }>()
+      expect(row?.n, name).toBe(0)
+    }
+    expect(await db.select().from(game)).toEqual([{ id: 1, phase: 'lobby' }])
+  })
+
+  it("runs only once: applying the migrations again leaves a later game alone", async () => {
+    const a = await addPlayer('Player A', { challenge: 1, decoy: 1 })
+    await db.update(game).set({ phase: 'game_on' }).where(eq(game.id, 1))
+
+    await applyD1Migrations(env.DB, inject('migrations'))
+
+    expect(await db.select().from(players)).toMatchObject([{ id: a.id, challenge: 1 }])
+    expect(await getPhase(db)).toBe('game_on')
   })
 })
