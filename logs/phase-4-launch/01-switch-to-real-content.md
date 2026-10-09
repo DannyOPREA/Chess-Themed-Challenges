@@ -42,5 +42,8 @@ Plan: [docs/phase-4-launch/01-switch-to-real-content.md](../../docs/phase-4-laun
 **Didn't work**
 - A first local check of the `--var` override hit a 500 on joining, because the reviewer had removed its temporary `.dev.vars` at that moment, so the dev server had no cookie secret. The reviewer's own check, with the secrets present, showed the override works.
 
+- Ran the `unit-reviewer` agent again on the fixes: verdict "Pass", nothing Blocking or Should fix. It confirmed in a scratch copy that `npm run dev` serves the test set both with a `.dev.vars` holding only the secrets and with one that says `CONTENT_SET=real`, and found no real content in the diff, commit messages or PR text.
+
 **Decisions**
-- The PR is merged after a second `unit-reviewer` run passes on the fixes. Why: the working agreement asks for the review to run again until it passes.
+- The PR is merged after the second `unit-reviewer` run passed. Why: the working agreement asks for the review to run again until it passes.
+- The read-only check after the merge is reported to Danny in the project thread, not logged in a later PR. Why: nothing else should be merged to `main` before Saturday's event, since every merge redeploys the live app.
