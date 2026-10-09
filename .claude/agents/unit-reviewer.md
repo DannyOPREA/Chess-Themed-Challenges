@@ -34,7 +34,7 @@ You are given a branch or PR and the path of the unit's build plan. For the whol
 
 Skip this section only if the change touches no app code.
 
-1. `npm run db:migrate:local`, then start `npm run dev` in the background and wait until it answers on its local port. Check `wrangler.jsonc` / `.dev.vars` for the local host password and the `test` content setting.
+1. `npm run db:migrate:local`, then start `npm run dev` in the background and wait until it answers on its local port. Check `.dev.vars` for the local host password. `npm run dev` sets `CONTENT_SET` to `test` over `wrangler.jsonc`'s `real` (unit 4.01); confirm the screens show the test placeholders, and stop if they show anything else.
 2. Drive it with Playwright, which is installed globally with Chromium in cloud containers. Write a CommonJS script in your scratch directory and run it with `NODE_PATH="$(npm root -g)" node script.cjs`; `require('playwright')` then works. Don't run `playwright install`.
 3. Use a phone viewport (390 × 844) and a separate browser context for each player, so each has their own cookies. Use the host page with HTTP basic auth where the unit needs it.
 4. Play the flows the unit touches, as several players where it matters: join, rejoin with name and PIN, marking done and undoing it, accusing and changing an accusation, the host moving phases, the reveal. Try the awkward paths too: a wrong PIN, a duplicate name in different capitals, a stale tab after the phase changes, the 10-second poll.

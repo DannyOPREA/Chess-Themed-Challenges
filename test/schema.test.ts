@@ -1,6 +1,6 @@
-import { env } from 'cloudflare:test'
+import { applyD1Migrations, env } from 'cloudflare:test'
 import { eq } from 'drizzle-orm'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, inject, it } from 'vitest'
 import { createDb } from '../src/db/client'
 import { getPhase } from '../src/db/game'
 import { accusations, game, players } from '../src/db/schema'
@@ -195,5 +195,64 @@ describe('accusations', () => {
     expect(await db.select().from(accusations)).toEqual([
       { accuserId: c.id, accusedId: a.id, challenge: 4 },
     ])
+  })
+})
+
+// Unit 4.01's migration clears the test game when the app switches to the real
+// content. Every test file has already applied it to an empty database, so it
+// is run again here over a game in progress.
+describe('migration 0003, clearing the game for the real content', () => {
+  const clearGame = async () => {
+    const migration = inject('migrations').find((m) => m.name === '0003_clear_game_for_real_content.sql')
+    if (!migration) throw new Error('migration 0003 is missing')
+    await env.DB.batch(migration.queries.map((query) => env.DB.prepare(query)))
+  }
+
+  it('deletes every player and accusation and goes back to an empty Lobby', async () => {
+    const a = await addPlayer('Player A', { challenge: 1, decoy: 1 })
+    const b = await addPlayer('Player B', { challenge: 2, decoy: 2 })
+    await db.update(players).set({ completed: true }).where(eq(players.id, a.id))
+    await db.insert(accusations).values([
+      { accuserId: a.id, accusedId: b.id, challenge: 2 },
+      { accuserId: b.id, accusedId: a.id, challenge: 3 },
+    ])
+    await db.update(game).set({ phase: 'reveal' }).where(eq(game.id, 1))
+
+    await clearGame()
+
+    expect(await db.select().from(players)).toEqual([])
+    expect(await db.select().from(accusations)).toEqual([])
+    expect(await getPhase(db)).toBe('lobby')
+    // Ids keep counting up, so a phone with a test player's cookie is logged out.
+    const c = await addPlayer('Player A')
+    expect(c.id).toBeGreaterThan(b.id)
+  })
+
+  it('empties every game table but the game row, so a table added later must be added to it', async () => {
+    const a = await addPlayer('Player A', { challenge: 1, decoy: 1 })
+    const b = await addPlayer('Player B', { challenge: 2, decoy: 2 })
+    await db.insert(accusations).values({ accuserId: a.id, accusedId: b.id, challenge: 2 })
+
+    await clearGame()
+
+    const { results } = await env.DB.prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name NOT IN ('game', 'd1_migrations')",
+    ).all<{ name: string }>()
+    expect(results.map((r) => r.name).sort()).toEqual(['accusations', 'players'])
+    for (const { name } of results) {
+      const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM \`${name}\``).first<{ n: number }>()
+      expect(row?.n, name).toBe(0)
+    }
+    expect(await db.select().from(game)).toEqual([{ id: 1, phase: 'lobby' }])
+  })
+
+  it("runs only once: applying the migrations again leaves a later game alone", async () => {
+    const a = await addPlayer('Player A', { challenge: 1, decoy: 1 })
+    await db.update(game).set({ phase: 'game_on' }).where(eq(game.id, 1))
+
+    await applyD1Migrations(env.DB, inject('migrations'))
+
+    expect(await db.select().from(players)).toMatchObject([{ id: a.id, challenge: 1 }])
+    expect(await getPhase(db)).toBe('game_on')
   })
 })

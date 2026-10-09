@@ -22,6 +22,13 @@
       "when": 1791397464738,
       "tag": "0002_assignment_final",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791543660685,
+      "tag": "0003_clear_game_for_real_content",
+      "breakpoints": true
     }
   ]
 }

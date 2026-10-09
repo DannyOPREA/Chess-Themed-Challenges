@@ -9,7 +9,7 @@ import {
 } from '../src/content'
 
 describe('content loader', () => {
-  it('uses the test set in tests, as wrangler.jsonc configures', () => {
+  it('uses the test set in tests, as vitest.config.ts configures', () => {
     expect(env.CONTENT_SET).toBe('test')
     expect(loadContent(env.CONTENT_SET).challenges[0]?.name).toBe('Challenge 1')
   })

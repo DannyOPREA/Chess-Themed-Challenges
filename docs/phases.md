@@ -132,4 +132,4 @@ Folder: `docs/phase-4-launch/`
 ### 4.01 Switch to real content (`01-switch-to-real-content.md`)
 
 - Depends on: every earlier unit, the Thursday test run, and Danny's word (`CLAUDE.md`, "Stop and ask Danny")
-- Delivers: the single PR that sets `CONTENT_SET` to `real` and clears all game data (players, completions, accusations, phase back to Lobby), so Saturday starts from an empty lobby. The clear can reuse unit 3.06's `resetGame`. Merged only when Danny asks, as the merge freeze is on by then.
+- Delivers: the single PR that sets `CONTENT_SET` to `real` and clears all game data (players, completions, accusations, phase back to Lobby), so Saturday starts from an empty lobby. The clear is a D1 migration doing what unit 3.06's `resetGame` does, applied by the deploy. Merged only when Danny asks, as the merge freeze is on by then (Danny asked on 2026-10-09).
