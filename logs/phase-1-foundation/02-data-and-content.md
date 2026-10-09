@@ -111,3 +111,21 @@ Plan: [docs/phase-1-foundation/02-data-and-content.md](../../docs/phase-1-founda
 
 **Decisions**
 - None.
+
+## 2026-10-09: Danny changed hint 15
+
+**Done**
+- Danny asked for new wording for hint 15 in the real set, after the switch to the real content (unit 4.01). Changed it in `src/content/real.json` and in `Challenges, Decoys and Hints.txt` in the project's shared files, so the two still match. The text isn't copied here (`CLAUDE.md` rule 5).
+- Checked the whole of `real.json` against the shared file again with a script: everything matches apart from the two fixes made on import.
+- Typecheck and 305 tests pass.
+
+**Worked**
+- The content loader's checks (20 of each, non-empty, unique names) still pass on the changed set.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- Danny's double space before the last word was tidied to one space; otherwise the text is exactly as Danny wrote it, with no full stop added. Why: it reads as a typing slip, and the other hints use single spaces.
+- Merged and deployed straight away, on the Friday before the event. Why: Danny asked for the change on the live game, and a merge is the only way to change it. The game is an empty Lobby, so the deploy touches nobody. Nothing else went in with it.
+- Reviewed as a change with no app code (review steps 1, 4 and 5): only one string in the content file changed, which the existing content tests cover.

@@ -19,7 +19,7 @@ The database the game is stored in, the two content sets with a loader that pick
 
 1. Content, in `src/content/`:
    - `test.json`: "Challenge 1" to "Challenge 20" with "Description of Challenge n" and "Hint for Challenge n", and "Decoy 1" to "Decoy 20" with "Description of Decoy n".
-   - `real.json`: Danny's list, converted from `Challenges, Decoys and Hints.txt` in the project's shared files by a throwaway script, with the two fixes (the stray "***" removed from hint 10, "awkardly" corrected to "awkwardly" in hint 14). Each hint is stored on its challenge, since the source pairs them by name.
+   - `real.json`: Danny's list, converted from `Challenges, Decoys and Hints.txt` in the project's shared files by a throwaway script, with the two fixes (the stray "***" removed from hint 10, "awkardly" corrected to "awkwardly" in hint 14). Each hint is stored on its challenge, since the source pairs them by name. Danny changed hint 15 on 2026-10-09, in both the shared file and `real.json`.
    - `size.ts`: `CONTENT_SIZE` (20), on its own so the database schema can use it without loading the content files.
    - `index.ts`: `loadContent(contentSet)`, which checks the name is `test` or `real` and the file's shape with Zod (20 challenges each with a name, description and hint, 20 decoys each with a name and description, names unique) and throws otherwise, and `getChallenge` / `getDecoy` to look one up by number. Callers use `loadContent(c.env.CONTENT_SET)`.
 2. Phase rules, in `src/game/phases.ts`:
