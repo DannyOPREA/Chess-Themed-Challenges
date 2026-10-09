@@ -12,8 +12,14 @@ export default defineConfig(async () => {
         wrangler: { configPath: './wrangler.jsonc' },
         // Wrangler still warns "Missing required secrets" when tests start;
         // these values do reach the tests, so the warning is expected.
+        // CONTENT_SET overrides wrangler.jsonc's "real": tests use the test set
+        // (CLAUDE.md rule 4).
         miniflare: {
-          bindings: { HOST_PASSWORD: 'test-host-password', COOKIE_SECRET: 'test-cookie-secret' },
+          bindings: {
+            HOST_PASSWORD: 'test-host-password',
+            COOKIE_SECRET: 'test-cookie-secret',
+            CONTENT_SET: 'test',
+          },
         },
       }),
     ],

@@ -2,3 +2,6 @@
 # before `npm run dev`. Production values are set in the Cloudflare dashboard.
 HOST_PASSWORD=local-host-password
 COOKIE_SECRET=local-cookie-secret-change-me
+# The deployed app uses the real content (wrangler.jsonc); local development
+# uses the test set (CLAUDE.md rule 4). This line overrides wrangler.jsonc.
+CONTENT_SET=test
