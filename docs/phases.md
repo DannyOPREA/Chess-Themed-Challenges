@@ -4,7 +4,7 @@
 - Approved by Danny: 2026-10-07
 - Changes to this plan are logged in [`logs/general.md`](../logs/general.md).
 
-This plan splits the build of [`scope.md`](scope.md) into 4 phases and 13 units. One unit is one PR. Each unit's detailed build plan is written in its own PR, at the path shown, from the template in [`README.md`](README.md); this file only fixes what each unit delivers, what it depends on, and the order.
+This plan splits the build of [`scope.md`](scope.md) into 4 phases and 14 units. One unit is one PR. Each unit's detailed build plan is written in its own PR, at the path shown, from the template in [`README.md`](README.md); this file only fixes what each unit delivers, what it depends on, and the order.
 
 ## Key dates
 
@@ -13,6 +13,7 @@ This plan splits the build of [`scope.md`](scope.md) into 4 phases and 13 units.
 | Thursday 2026-10-08, 18:00 UK | Danny's test run with the `test` content |
 | After the test run, when Danny says | Switch to the `real` content and clear the game (unit 4.01) |
 | Saturday 2026-10-10 | The crawl |
+| Sunday 2026-10-11 | Archive the app (unit 4.02) |
 
 The build has no target times (Danny, 2026-10-07). Work runs non-stop until Danny says to stop: each unit starts as soon as the units it depends on are merged, and the whole-app check starts as soon as phases 1 to 3 are.
 
@@ -30,6 +31,7 @@ Units in the same wave can run in parallel. A unit starts once every unit it dep
 | D3 | 3.07 Host results button (added 2026-10-08 at Danny's request) | 3.04 and 3.05 |
 | E | Whole-app check (not a unit, see below) | units 3.01 to 3.05 and phases 1 and 2 (it ran before 3.06 was added) |
 | F | 4.01 Switch to real content | the Thursday test run and Danny's word |
+| G | 4.02 Archive after the event (added 2026-10-11 at Danny's request) | the event |
 
 No other unit needs 1.03, but it comes early so that Danny's Cloudflare steps can be done before Thursday.
 
@@ -133,3 +135,8 @@ Folder: `docs/phase-4-launch/`
 
 - Depends on: every earlier unit, the Thursday test run, and Danny's word (`CLAUDE.md`, "Stop and ask Danny")
 - Delivers: the single PR that sets `CONTENT_SET` to `real` and clears all game data (players, completions, accusations, phase back to Lobby), so Saturday starts from an empty lobby. The clear is a D1 migration doing what unit 3.06's `resetGame` does, applied by the deploy. Merged only when Danny asks, as the merge freeze is on by then (Danny asked on 2026-10-09).
+
+### 4.02 Archive after the event (`02-archive.md`)
+
+- Depends on: the event being over, and Danny's request (2026-10-11)
+- Delivers: the app taken offline in a way that can be undone (`workers_dev` off, through a merge), a copy of the final game data and results in the Claude project's files, and `docs/revival.md`, the guide to bringing the app back for another event.

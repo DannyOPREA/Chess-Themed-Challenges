@@ -6,6 +6,7 @@ This folder holds two kinds of file.
   - `scope.md`: the agreed spec. It decides how the game behaves.
   - `phases.md`: the phase-by-phase plan, listing each phase and its units. Claude writes it within `scope.md`.
   - `README.md`: this file.
+  - `revival.md`: how the app was archived after the 2026 event, and how to bring it back.
 - **Build plans**, one sub-folder per phase. Each plan covers one unit: a piece of work small enough to build, test and merge in one PR.
 
 Every build plan has a log at the same path under `logs/`. For example, `docs/phase-1-foundation/01-scaffold.md` is logged in `logs/phase-1-foundation/01-scaffold.md`. The log format is in [`logs/README.md`](../logs/README.md).

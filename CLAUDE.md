@@ -2,6 +2,8 @@
 
 A mobile web app for a one-night chess-themed pub crawl (Saturday 2026-10-10, about 20 players on their own phones). Each player is secretly given a challenge and a decoy, accuses other players of challenges, and is scored at the reveal.
 
+**Archived since 2026-10-11.** The event ran on 2026-10-10; the app is offline (`workers_dev` is `false`) and `docs/revival.md` says how to bring it back.
+
 **`docs/scope.md` is the agreed spec.** Read it before changing anything about how the game behaves.
 
 ## Stack (agreed; don't swap pieces without Danny's OK)

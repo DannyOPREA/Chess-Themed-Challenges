@@ -2,6 +2,8 @@
 
 A mobile web app for a chess-themed pub crawl: each player gets a secret challenge and a decoy, accuses other players, and is scored at the reveal.
 
+**Archived.** The app ran the crawl on 2026-10-10 and has been offline since 2026-10-11. [`docs/revival.md`](docs/revival.md) says what was kept and how to bring it back.
+
 ## Running it locally
 
 ```sh
