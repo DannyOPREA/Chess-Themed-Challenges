@@ -224,3 +224,17 @@ Work that belongs to no unit: project setup, process changes, and decisions that
 
 **Decisions**
 - A new unit in phase 3 rather than a change to 3.04's or 3.05's plan. Why: both are Done and reviewed; a separate unit keeps its own plan, log and review, as with 3.06. Danny asked for the button on 2026-10-08, which is the OK for the scope change. It has to merge before the 17:00 UK merge freeze for the Thursday test.
+
+## 2026-10-11: Unit 4.02 added (archive after the event)
+
+**Done**
+- Added unit 4.02 Archive after the event to `docs/phases.md` (now 14 units). Its plan and log are in `docs/phase-4-launch/02-archive.md` and its log.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- Nothing.
+
+**Decisions**
+- A new unit rather than a change to an earlier plan. Why: Danny asked on 2026-10-11, after the event, for the app to be archived and taken offline; no earlier unit covers it.

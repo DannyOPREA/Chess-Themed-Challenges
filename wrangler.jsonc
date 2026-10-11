@@ -3,10 +3,12 @@
   "name": "chess-themed-challenges",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
-  // The app is served at chess-themed-challenges.<account>.workers.dev. Each
+  // Off since the 2026 event (unit 4.02): the Worker stays deployed but has no
+  // public address. Set it to true and merge to bring the app back at
+  // chess-themed-challenges.<account>.workers.dev (docs/revival.md). Each
   // deployed version's own preview URL is off, so only the live version is
-  // reachable (an old version would run against the current database).
-  "workers_dev": true,
+  // ever reachable (an old version would run against the current database).
+  "workers_dev": false,
   "preview_urls": false,
   // Copies Pico CSS and htmx from node_modules into public/vendor/ before
   // `wrangler dev` and `wrangler deploy`, so the pages load them from the app
@@ -21,7 +23,7 @@
     // Picks the content set: "test" (placeholders) or "real" (Danny's list).
     // "real" since unit 4.01, whose migration 0003 cleared the test game
     // (CLAUDE.md rule 4). Local development and tests still use "test": it is
-    // set in .dev.vars (see .dev.vars.example) and in vitest.config.ts.
+    // set by `npm run dev` (--var CONTENT_SET:test) and in vitest.config.ts.
     "CONTENT_SET": "real"
   },
   // Secrets are set in the Cloudflare dashboard (README.md, "Deploying"),

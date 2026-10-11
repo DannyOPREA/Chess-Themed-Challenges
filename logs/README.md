@@ -1,6 +1,6 @@
 # logs
 
-`logs/` mirrors the build plans in `docs/`: every build plan has exactly one log at the same path. For example, `docs/phase-1-foundation/01-scaffold.md` is logged in `logs/phase-1-foundation/01-scaffold.md`. The reference docs at the top of `docs/` (`scope.md`, `phases.md`, `README.md`) have no log.
+`logs/` mirrors the build plans in `docs/`: every build plan has exactly one log at the same path. For example, `docs/phase-1-foundation/01-scaffold.md` is logged in `logs/phase-1-foundation/01-scaffold.md`. The reference docs at the top of `docs/` (`scope.md`, `phases.md`, `README.md`, `revival.md`) have no log.
 
 The one log without a plan is [`general.md`](general.md). It records work that belongs to no unit: project setup, process changes, and decisions that cover the whole project, including changes to `docs/phases.md`. A fix to a unit's code is logged in that unit's log, even after the unit is done.
 
