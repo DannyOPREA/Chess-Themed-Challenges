@@ -25,7 +25,7 @@ The host page is at `/host`. The browser asks for a user name and password: any 
 
 Every push to `main` deploys the app through Cloudflare Workers Builds; nothing is deployed by hand. Workers Builds installs the packages and runs `npm run deploy`, which applies any new D1 migrations to the production database and then runs `wrangler deploy`. `scripts/deploy.sh` runs both with the token Workers Builds provides, or with the API token in the build secret `DEPLOY_API_TOKEN` if that is set (step 5), and its first lines in the build log say which. Wrangler runs `scripts/copy-vendor.mjs` before deploying, and finds the production database by its name, `chess-crawl`. CI's `check` job also builds the Worker without uploading it (`wrangler deploy --dry-run`), so a change that can't deploy fails before it reaches `main`.
 
-The live app is at `https://chess-themed-challenges.<your-subdomain>.workers.dev`, shown on the Worker's page in the Cloudflare dashboard.
+The live app is at `https://chess-themed-challenges.<your-subdomain>.workers.dev`, shown on the Worker's page in the Cloudflare dashboard, while `workers_dev` is `true` in `wrangler.jsonc`. Since the app was archived it is `false`, so deploys still run but the Worker has no address; [`docs/revival.md`](docs/revival.md) says how to bring it back.
 
 ### One-time setup (Danny, in the Cloudflare dashboard)
 

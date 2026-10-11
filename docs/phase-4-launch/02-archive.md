@@ -1,6 +1,6 @@
 # Phase 4, unit 02: Archive after the event
 
-- Status: Done
+- Status: In progress
 - Log: [logs/phase-4-launch/02-archive.md](../../logs/phase-4-launch/02-archive.md)
 - Depends on: the event (Saturday 2026-10-10) being over. Danny asked for this on 2026-10-11.
 
@@ -19,7 +19,8 @@ The app is no longer reachable while nobody is using it, nothing needed to run i
 
 1. Copy the live game data out of the `chess-crawl` database with read-only queries through the Cloudflare connector, into the Claude project's files (`archive/2026-event/`), not the public repository: `live-data.json` (every row), `live-data.sql` (to load into a database with the migrations applied) and `results.md` (the leaderboard and breakdowns, worked out with `scoreGame` from `src/game/scoring.ts`). Check that `live-data.sql` loads into a local D1 and that the host results screen shows the same scores.
 2. `wrangler.jsonc`: `workers_dev` is `false`. The merge makes Workers Builds deploy, and `wrangler deploy` then turns off the Worker's `workers.dev` address. The Worker, its secrets, the build connection and the database stay, so bringing the app back is the same one-line change the other way. `preview_urls` was already `false`, so no other address serves it.
-3. `docs/revival.md`: what was left where, and the steps to bring the app back (including when the Worker or database was deleted, or the repository archived), to take it offline again, and to look at the 2026 results locally. Linked from `README.md`, `docs/README.md` and `CLAUDE.md`.
+3. `docs/revival.md`: what was left where, and the steps to bring the app back (including when the Worker or database was deleted, or the repository archived), to take it offline again, and to look at the 2026 results locally. Bringing it back is one PR that turns the address on, picks the content set and clears the old game with a migration, so the old game is never on show. Linked from `README.md` (with a note in "Deploying" that the address is off), `docs/README.md`, `logs/README.md` (it has no log) and `CLAUDE.md`.
+4. After the merge, check that the Workers Builds deploy passed and the `workers.dev` address no longer serves the app, and record it in a small docs PR that sets this plan to Done.
 
 ## Tests
 

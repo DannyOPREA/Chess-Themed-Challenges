@@ -23,7 +23,7 @@
     // Picks the content set: "test" (placeholders) or "real" (Danny's list).
     // "real" since unit 4.01, whose migration 0003 cleared the test game
     // (CLAUDE.md rule 4). Local development and tests still use "test": it is
-    // set in .dev.vars (see .dev.vars.example) and in vitest.config.ts.
+    // set by `npm run dev` (--var CONTENT_SET:test) and in vitest.config.ts.
     "CONTENT_SET": "real"
   },
   // Secrets are set in the Cloudflare dashboard (README.md, "Deploying"),
