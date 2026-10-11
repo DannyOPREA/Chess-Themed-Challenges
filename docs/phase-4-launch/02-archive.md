@@ -1,6 +1,6 @@
 # Phase 4, unit 02: Archive after the event
 
-- Status: In progress
+- Status: Done
 - Log: [logs/phase-4-launch/02-archive.md](../../logs/phase-4-launch/02-archive.md)
 - Depends on: the event (Saturday 2026-10-10) being over. Danny asked for this on 2026-10-11.
 

@@ -42,3 +42,17 @@ Plan: [docs/phase-4-launch/02-archive.md](../../docs/phase-4-launch/02-archive.m
 - `/code-review` at high found: the first revival guide turned the address on before clearing the old game and before picking the content set (fixed, as above); this log had no work entry and the plan said Done before the deploy was checked (fixed); the guide didn't say to remove the "Archived" notes (added); README "Deploying" still said the app was live (fixed); a deleted database would fail every later build (noted in the guide); `cp .dev.vars.example .dev.vars` could overwrite an existing file (now `cp -n`), and `--var CONTENT_SET:real` looked redundant (kept: it overrides a `CONTENT_SET` in `.dev.vars`, which the reviewer confirmed); `logs/README.md` didn't list `revival.md` among the docs with no log (fixed).
 - `unit-reviewer`, first run: no Blocking. Should fix: the missing log entry and status (fixed, as above) and the revival order (fixed). Notes: the stale `.dev.vars` comment in `wrangler.jsonc` (fixed); the local results steps need a database with no players (now said); `npm run db:generate -- --custom` instead of `npx drizzle-kit` (changed). The claim that builds fail without the database is inferred from `scripts/deploy.sh`, not tested, since that needs `--remote`.
 - `unit-reviewer`, second run: Pass, nothing Blocking or Should fix. Its one note, that revival step 4 didn't name every place the archive is mentioned (README "Deploying", `docs/README.md`), was fixed. It also ran `npm run db:generate -- --custom` in a scratch copy and confirmed it writes an empty migration.
+
+## 2026-10-11: Deploy checked after the merge
+
+**Done**
+- PR #26 merged at 10:15 UTC. The Cloudflare connector (read-only) shows the `chess-themed-challenges` Worker modified at 10:15:59 UTC, so the Workers Builds deploy with `workers_dev` off ran. The plan is now Done.
+
+**Worked**
+- Nothing new to note.
+
+**Didn't work**
+- The address itself couldn't be opened from the session: the connector doesn't show the account's `workers.dev` subdomain, and nothing in the repo or project records it. Danny was asked to open the old link once to confirm it no longer loads the app.
+
+**Decisions**
+- Status Done on the connector's evidence. Why: the deploy only uploads the new version after `wrangler deploy` starts, and it sends the `workers.dev` change in the same run; a failed run would show as a failed build on the Worker's Deployments tab, which Danny can see.
